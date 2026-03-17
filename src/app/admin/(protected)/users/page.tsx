@@ -1,0 +1,434 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
+import Input from "@/components/ui/Input";
+import AdminModal from "@/components/admin/AdminModal";
+import AdminGuard from "@/components/admin/AdminGuard";
+import { useAuth, UserRole } from "@/context/AuthContext";
+import { HiPencil, HiTrash, HiPlus } from "react-icons/hi";
+
+const ROLE_OPTIONS: UserRole[] = ["admin", "editor", "blog_manager"];
+
+interface AdminUser {
+  id: string;
+  email: string;
+  displayName: string | null;
+  role: UserRole;
+}
+
+export default function AdminUsersPage() {
+  const { profile } = useAuth();
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editing, setEditing] = useState<AdminUser | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const adminCount = useMemo(
+    () => users.filter((user) => user.role === "admin").length,
+    [users]
+  );
+
+  useEffect(() => {
+    if (profile?.role !== "admin") {
+      return;
+    }
+
+    void fetchUsers();
+  }, [profile?.role]);
+
+  async function fetchUsers() {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(payload?.error || "Failed to load users");
+      }
+
+      const result = (await res.json()) as { users?: AdminUser[] };
+      setUsers(Array.isArray(result.users) ? result.users : []);
+    } catch (err) {
+      console.error("Load users failed:", err);
+      setError(err instanceof Error ? err.message : "Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openEdit(user: AdminUser) {
+    setEditing(user);
+    setModalOpen(true);
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editing) return;
+    setSaving(true);
+
+    const form = new FormData(e.currentTarget);
+    const payload = {
+      uid: editing.id,
+      displayName: String(form.get("displayName") || "").trim(),
+      role: form.get("role") as UserRole,
+    };
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorPayload = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(errorPayload?.error || "Failed to update user");
+      }
+
+      const result = (await res.json()) as { user: AdminUser };
+      setUsers((current) =>
+        current.map((user) => (user.id === result.user.id ? result.user : user))
+      );
+      setModalOpen(false);
+      setEditing(null);
+    } catch (err) {
+      console.error("Save failed:", err);
+      alert(err instanceof Error ? err.message : "Failed to update user");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(user: AdminUser) {
+    if (!confirm(`Remove user "${user.displayName || user.email}"?`)) return;
+    setDeletingId(user.id);
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: user.id }),
+      });
+
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(payload?.error || "Failed to delete user");
+      }
+
+      setUsers((current) => current.filter((item) => item.id !== user.id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete user");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleAdd(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setAdding(true);
+
+    const formElement = e.currentTarget;
+    const form = new FormData(formElement);
+    const payload = {
+      email: String(form.get("email") || "").trim(),
+      password: String(form.get("password") || ""),
+      role: form.get("role") as UserRole,
+      displayName: String(form.get("displayName") || "").trim(),
+    };
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorPayload = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(errorPayload?.error || "Failed to create user");
+      }
+
+      const result = (await res.json()) as { user: AdminUser };
+      setUsers((current) => [result.user, ...current]);
+      formElement.reset();
+      setAddModalOpen(false);
+    } catch (err) {
+      console.error("Create user failed:", err);
+      alert(err instanceof Error ? err.message : "Failed to create user");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  return (
+    <AdminGuard allowedRoles={["admin"]}>
+      <div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-primary-light)] border-t-transparent" />
+          </div>
+        ) : (
+          <>
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Users</h1>
+                <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                  Manage team accounts. This section is only visible to admins.
+                </p>
+              </div>
+              <Button onClick={() => setAddModalOpen(true)}>
+                <HiPlus className="mr-1.5 inline" /> Add User
+              </Button>
+            </div>
+
+            {error && (
+              <p className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                {error}
+              </p>
+            )}
+
+            {users.length === 0 ? (
+              <Card hover={false}>
+                <p className="py-8 text-center text-[var(--color-text-muted)]">
+                  No users found.
+                </p>
+              </Card>
+            ) : (
+              <Card hover={false}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--color-dark-border)]">
+                        <th className="pb-3 font-medium text-[var(--color-text-muted)]">
+                          Name
+                        </th>
+                        <th className="pb-3 font-medium text-[var(--color-text-muted)]">
+                          Email
+                        </th>
+                        <th className="pb-3 font-medium text-[var(--color-text-muted)]">
+                          Role
+                        </th>
+                        <th className="pb-3 text-right font-medium text-[var(--color-text-muted)]">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => {
+                        const isCurrentAdmin = user.id === profile?.uid;
+
+                        return (
+                          <tr
+                            key={user.id}
+                            className="border-b border-[var(--color-dark-border)] last:border-0"
+                          >
+                            <td className="py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-xs font-bold text-[var(--color-primary-light)]">
+                                  {(user.displayName || user.email || "?")
+                                    .split(" ")
+                                    .map((part) => part[0])
+                                    .join("")
+                                    .slice(0, 2)
+                                    .toUpperCase()}
+                                </div>
+                                <div>
+                                  <span className="font-medium text-white">
+                                    {user.displayName || user.email}
+                                  </span>
+                                  {isCurrentAdmin && (
+                                    <p className="text-xs text-[var(--color-text-muted)]">
+                                      Current admin account
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 text-[var(--color-text-muted)]">
+                              {user.email}
+                            </td>
+                            <td className="py-4">
+                              <Badge
+                                variant={user.role === "admin" ? "primary" : "muted"}
+                              >
+                                {user.role}
+                              </Badge>
+                            </td>
+                            <td className="py-4">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => openEdit(user)}
+                                  className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                                >
+                                  <HiPencil />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(user)}
+                                  disabled={isCurrentAdmin || deletingId === user.id}
+                                  title={
+                                    isCurrentAdmin
+                                      ? "You cannot delete your own admin account."
+                                      : undefined
+                                  }
+                                  className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  <HiTrash />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+
+            <AdminModal
+              open={modalOpen}
+              onClose={() => {
+                setModalOpen(false);
+                setEditing(null);
+              }}
+              title="Edit User"
+            >
+              {editing && (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-[var(--color-text)]">
+                      Email
+                    </label>
+                    <p className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark)] px-4 py-2.5 text-sm text-[var(--color-text-muted)]">
+                      {editing.email}
+                    </p>
+                  </div>
+                  <Input
+                    label="Display Name"
+                    name="displayName"
+                    defaultValue={editing.displayName ?? ""}
+                  />
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-[var(--color-text)]">
+                      Role
+                    </label>
+                    <select
+                      name="role"
+                      defaultValue={editing.role}
+                      disabled={editing.id === profile?.uid}
+                      className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none focus:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {ROLE_OPTIONS.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                    {editing.id === profile?.uid && adminCount >= 1 && (
+                      <p className="text-xs text-[var(--color-text-muted)]">
+                        Your own role is locked here so the panel always keeps an admin.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setModalOpen(false);
+                        setEditing(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={saving}>
+                      {saving ? "Saving..." : "Update"}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </AdminModal>
+
+            <AdminModal
+              open={addModalOpen}
+              onClose={() => setAddModalOpen(false)}
+              title="Add User"
+            >
+              <form onSubmit={handleAdd} className="space-y-4">
+                <Input
+                  label="Display Name"
+                  name="displayName"
+                  placeholder="Team member name"
+                />
+                <Input
+                  label="Email"
+                  name="email"
+                  type="email"
+                  placeholder="name@devoria.dev"
+                  required
+                />
+                <Input
+                  label="Password"
+                  name="password"
+                  type="password"
+                  placeholder="Minimum 6 characters"
+                  minLength={6}
+                  required
+                />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-[var(--color-text)]">
+                    Role
+                  </label>
+                  <select
+                    name="role"
+                    defaultValue="editor"
+                    className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none focus:border-[var(--color-primary)]"
+                  >
+                    {ROLE_OPTIONS.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setAddModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={adding}>
+                    {adding ? "Creating..." : "Create User"}
+                  </Button>
+                </div>
+              </form>
+            </AdminModal>
+          </>
+        )}
+      </div>
+    </AdminGuard>
+  );
+}
