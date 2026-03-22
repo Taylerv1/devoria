@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useFirestore } from "@/hooks/useFirestore";
 import { orderBy, where } from "firebase/firestore";
 import { NewsItem } from "@/types";
@@ -33,17 +34,22 @@ export default function NewsPage() {
       ) : (
         <div className="mx-auto max-w-3xl space-y-4 sm:space-y-6">
           {news.map((item) => (
-            <Card key={item.id} className="p-5 sm:p-7 lg:p-8">
-              <span className="text-xs font-medium text-[var(--color-primary-light)]">
-                {item.createdAt ? formatDate(item.createdAt) : ""}
-              </span>
-              <h3 className="mt-2 text-lg font-semibold text-white">
-                {item.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-muted)]">
-                {item.excerpt}
-              </p>
-            </Card>
+            <Link key={item.id} href={`/news/${item.slug}`}>
+              <Card className="group p-5 sm:p-7 lg:p-8">
+                <span className="text-xs font-medium text-[var(--color-primary-light)]">
+                  {item.createdAt ? formatDate(item.createdAt) : ""}
+                </span>
+                <h3 className="mt-2 text-lg font-semibold text-white transition-colors group-hover:text-[var(--color-primary-light)]">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-muted)]">
+                  {item.excerpt}
+                </p>
+                <p className="mt-4 text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)] transition-colors group-hover:text-white">
+                  Read full update
+                </p>
+              </Card>
+            </Link>
           ))}
         </div>
       )}
