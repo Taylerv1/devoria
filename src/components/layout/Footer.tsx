@@ -1,6 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { siteConfig } from "@/lib/config";
 import { HiHeart } from "react-icons/hi";
+import devoriaLogo from "../../../devoriaLogo.png";
 
 export default function Footer() {
   return (
@@ -9,9 +11,14 @@ export default function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4 md:gap-12">
           {/* Brand */}
           <div className="md:col-span-1">
-            <Link href="/" className="text-2xl font-bold tracking-tight">
-              <span className="text-[var(--color-primary-light)]">Dev</span>
-              oria
+            <Link href="/" className="relative block h-12 w-52 overflow-hidden">
+              <Image
+                src={devoriaLogo}
+                alt="Devoria"
+                fill
+                sizes="208px"
+                className="object-cover [object-position:50%_45%] scale-[1.85] -translate-x-[24%]"
+              />
             </Link>
             <p className="mt-4 text-sm leading-relaxed text-[var(--color-text-muted)]">
               Crafting exceptional digital experiences with modern technology and

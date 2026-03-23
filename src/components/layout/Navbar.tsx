@@ -12,32 +12,32 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--color-dark-border)] bg-[var(--color-dark)]/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="relative -ml-7 block h-12 w-52 shrink-0 overflow-hidden sm:ml-0">
+      <div className="mx-auto flex h-[70px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="relative -ml-7 block h-[52px] w-[228px] shrink-0 overflow-hidden sm:ml-0">
           <Image
             src={devoriaLogo}
             alt="Devoria"
             fill
-            sizes="208px"
+            sizes="228px"
             priority
             className="object-cover [object-position:50%_45%]"
           />
         </Link>
 
         {/* Desktop */}
-        <div className="hidden items-center gap-6 lg:flex">
+        <div className="hidden items-center gap-7 lg:flex">
           {siteConfig.navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="relative text-sm text-[var(--color-text-muted)] no-underline transition-all duration-200 hover:text-[var(--color-primary)] hover:[text-shadow:0_0_10px_var(--color-primary),0_0_20px_var(--color-primary),0_0_30px_var(--color-primary),0_0_40px_var(--color-primary)]"
+              className="relative text-[15px] text-[var(--color-text-muted)] no-underline transition-all duration-200 hover:text-[var(--color-primary)] hover:[text-shadow:0_0_10px_var(--color-primary),0_0_20px_var(--color-primary),0_0_30px_var(--color-primary),0_0_40px_var(--color-primary)]"
             >
               {link.label}
             </Link>
           ))}
           <Link
             href="/contact"
-            className="ml-2 rounded-lg bg-[var(--color-primary)] px-5 py-2 text-sm font-medium text-white transition-all hover:bg-[var(--color-primary-light)]"
+            className="ml-2 rounded-lg bg-[var(--color-primary)] px-[22px] py-[9px] text-[15px] font-medium text-white transition-all hover:bg-[var(--color-primary-light)]"
           >
             Get in Touch
           </Link>
@@ -46,7 +46,7 @@ export default function Navbar() {
         {/* Mobile toggle */}
         <button
           onClick={() => setOpen(!open)}
-          className="text-2xl text-white lg:hidden"
+          className="text-[27px] text-white lg:hidden"
           aria-label="Toggle menu"
         >
           {open ? <HiX /> : <HiMenuAlt3 />}
