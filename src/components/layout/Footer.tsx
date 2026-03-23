@@ -17,7 +17,7 @@ export default function Footer() {
                 alt="Devoria"
                 fill
                 sizes="208px"
-                className="object-cover [object-position:50%_45%] scale-[1.85] -translate-x-[24%]"
+                className="object-cover [object-position:50%_45%] -translate-x-[20%]"
               />
             </Link>
             <p className="mt-4 text-sm leading-relaxed text-[var(--color-text-muted)]">
