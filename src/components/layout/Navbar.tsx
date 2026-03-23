@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { siteConfig } from "@/lib/config";
 import { HiMenuAlt3, HiX } from "react-icons/hi";
+import devoriaLogo from "../../../devoriaLogo.png";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -11,8 +13,15 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--color-dark-border)] bg-[var(--color-dark)]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="text-2xl font-bold tracking-tight">
-          <span className="text-[var(--color-primary-light)]">Dev</span>oria
+        <Link href="/" className="relative -ml-7 block h-12 w-52 shrink-0 overflow-hidden sm:ml-0">
+          <Image
+            src={devoriaLogo}
+            alt="Devoria"
+            fill
+            sizes="208px"
+            priority
+            className="object-cover [object-position:50%_45%]"
+          />
         </Link>
 
         {/* Desktop */}
