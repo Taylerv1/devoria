@@ -1,16 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #6C3CE1;
-  --color-primary-light: #8B5CF6;
-  --color-primary-dark: #5228CC;
-  --color-accent: #00D4AA;
-  --color-accent-light: #34E0BE;
-  --color-dark: #0A0A0F;
-  --color-dark-card: #12121A;
-  --color-dark-border: #1E1E2E;
-  --color-text: #E4E4E7;
-  --color-text-muted: #71717A;
+  --color-primary: #6F6251;
+  --color-primary-light: #938470;
+  --color-primary-dark: #474237;
+  --color-accent: #DBD4CC;
+  --color-accent-light: #EDEAE5;
+  --color-dark: #161616;
+  --color-dark-card: #1F211C;
+  --color-dark-border: #474237;
+  --color-text: #EDEAE5;
+  --color-text-muted: #B8AEA2;
+  --color-primary-rgb: 111 98 81;
+  --color-accent-rgb: 219 212 204;
+  --color-dark-rgb: 22 22 22;
+  --color-dark-card-rgb: 31 33 28;
+  --color-text-rgb: 237 234 229;
 }
 
 *,
@@ -47,7 +52,7 @@ svg {
 
 ::selection {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text);
 }
 
 /* Scrollbar */
@@ -63,4 +68,56 @@ svg {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary);
+}
+
+.text-white {
+  color: rgb(var(--color-text-rgb) / 1) !important;
+}
+
+.hover\:text-white:hover {
+  color: rgb(var(--color-text-rgb) / 1) !important;
+}
+
+.bg-white\/5 {
+  background-color: rgb(var(--color-text-rgb) / 0.05) !important;
+}
+
+.bg-white\/10 {
+  background-color: rgb(var(--color-text-rgb) / 0.1) !important;
+}
+
+.hover\:bg-white\/5:hover {
+  background-color: rgb(var(--color-text-rgb) / 0.05) !important;
+}
+
+.border-white\/6 {
+  border-color: rgb(var(--color-text-rgb) / 0.06) !important;
+}
+
+.border-white\/8 {
+  border-color: rgb(var(--color-text-rgb) / 0.08) !important;
+}
+
+.border-white\/10 {
+  border-color: rgb(var(--color-text-rgb) / 0.1) !important;
+}
+
+.text-red-400 {
+  color: var(--color-primary) !important;
+}
+
+.border-red-500 {
+  border-color: var(--color-primary) !important;
+}
+
+.bg-red-500\/10 {
+  background-color: rgb(var(--color-primary-rgb) / 0.1) !important;
+}
+
+.hover\:bg-red-500\/10:hover {
+  background-color: rgb(var(--color-primary-rgb) / 0.12) !important;
+}
+
+.hover\:text-red-400:hover {
+  color: var(--color-primary-light) !important;
 }

@@ -9,12 +9,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants = {
   primary:
-    "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-light)]",
+    "bg-[var(--color-primary)] text-[var(--color-text)] hover:bg-[var(--color-primary-light)]",
   secondary:
     "bg-[var(--color-accent)] text-[var(--color-dark)] hover:bg-[var(--color-accent-light)]",
   outline:
-    "border border-[var(--color-dark-border)] text-white hover:border-[var(--color-primary)] hover:text-[var(--color-primary-light)]",
-  ghost: "text-[var(--color-text-muted)] hover:text-white hover:bg-white/5",
+    "border border-[var(--color-dark-border)] text-[var(--color-text)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary-light)]",
+  ghost: "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-white/5",
 };
 
 const sizes = {

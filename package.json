@@ -11,6 +11,8 @@
     "seed": "node scripts/seed-demo-data.js"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@supabase/supabase-js": "^2.99.2",
     "firebase": "^11.0.0",
     "firebase-admin": "^13.7.0",
@@ -19,7 +21,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.0.0",
-    "resend": "^6.9.4"
+    "resend": "^6.9.4",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",

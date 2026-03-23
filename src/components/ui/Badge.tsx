@@ -9,7 +9,7 @@ const variants = {
   accent:
     "bg-[var(--color-accent)]/10 text-[var(--color-accent)] border-[var(--color-accent)]/20",
   muted:
-    "bg-white/5 text-[var(--color-text-muted)] border-white/10",
+    "bg-[var(--color-dark)]/35 text-[var(--color-text-muted)] border-[var(--color-dark-border)]",
 };
 
 export default function Badge({

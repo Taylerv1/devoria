@@ -21,7 +21,7 @@ export default function Input({
       )}
       <input
         className={cn(
-          "rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white placeholder-[var(--color-text-muted)] outline-none transition-colors focus:border-[var(--color-primary)]",
+          "rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none transition-colors focus:border-[var(--color-primary)]",
           error && "border-red-500",
           className
         )}
