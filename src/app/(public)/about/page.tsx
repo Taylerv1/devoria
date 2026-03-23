@@ -30,10 +30,10 @@ const values = [
 ];
 
 const team = [
-  { name: "Alex Rivera", role: "Founder & CEO", image: "/team/alex.jpg" },
-  { name: "Sam Chen", role: "CTO", image: "/team/sam.jpg" },
-  { name: "Jordan Lee", role: "Lead Designer", image: "/team/jordan.jpg" },
-  { name: "Taylor Kim", role: "Full-Stack Developer", image: "/team/taylor.jpg" },
+  { name: "Mahmoud Shehadeh", role: "Full-Stack Developer", image: "/team/alex.jpg" },
+  { name: "Tarek Al-Dali", role: "Quality Assurance Engineer", image: "/team/sam.jpg" },
+  { name: "Hadi Diab", role: "Lead Designer", image: "/team/jordan.jpg" },
+  { name: "Baraa Amouri", role: "DevOps Engineer", image: "/team/taylor.jpg" },
 ];
 
 export default function AboutPage() {

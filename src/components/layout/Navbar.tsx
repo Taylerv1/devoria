@@ -30,7 +30,7 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-white"
+              className="relative text-sm text-[var(--color-text-muted)] no-underline transition-all duration-200 hover:text-[var(--color-primary)] hover:[text-shadow:0_0_10px_var(--color-primary),0_0_20px_var(--color-primary),0_0_30px_var(--color-primary),0_0_40px_var(--color-primary)]"
             >
               {link.label}
             </Link>
@@ -62,7 +62,7 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                className="relative rounded-lg px-3 py-2.5 text-[var(--color-text-muted)] no-underline transition-all duration-500 hover:bg-white/5 hover:text-[var(--color-primary)] hover:[text-shadow:0_0_10px_var(--color-primary),0_0_20px_var(--color-primary),0_0_30px_var(--color-primary),0_0_40px_var(--color-primary)]"
               >
                 {link.label}
               </Link>
