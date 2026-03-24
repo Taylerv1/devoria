@@ -22,13 +22,17 @@ export default function FeaturedProjects() {
 
   return (
     <Section>
-      <div className="mb-10 text-center sm:mb-14">
-        <p className="text-sm font-medium uppercase tracking-widest text-[var(--color-accent)]">
+      <div className="mb-10 text-center sm:mb-12">
+        <p className="text-sm font-medium uppercase tracking-[0.28em] text-[var(--color-primary-light)]">
           Our Work
         </p>
         <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl md:text-4xl">
           Featured Projects
         </h2>
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[var(--color-text-muted)] sm:text-base">
+          Selected product work across dashboards, platforms, and digital
+          experiences built for ambitious teams.
+        </p>
       </div>
 
       {loading ? (
