@@ -15,6 +15,7 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import AdminModal from "@/components/admin/AdminModal";
+import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { slugify, formatDate } from "@/utils";
@@ -30,6 +31,8 @@ export default function AdminBlogPage() {
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [saving, setSaving] = useState(false);
   const [coverImage, setCoverImage] = useState("");
+  const [deletingPost, setDeletingPost] = useState<BlogPost | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   function openCreate() {
     setEditing(null);
@@ -92,13 +95,21 @@ export default function AdminBlogPage() {
     }
   }
 
-  async function handleDelete(post: BlogPost) {
-    if (!confirm(`Delete "${post.title}"?`)) return;
+  function requestDelete(post: BlogPost) {
+    setDeletingPost(post);
+  }
+
+  async function handleDelete() {
+    if (!deletingPost) return;
+    setDeleting(true);
     try {
-      await deleteDocument("blog", post.id);
-      setData(posts.filter((p) => p.id !== post.id));
+      await deleteDocument("blog", deletingPost.id);
+      setData(posts.filter((p) => p.id !== deletingPost.id));
+      setDeletingPost(null);
     } catch {
       alert("Failed to delete blog post.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -157,7 +168,7 @@ export default function AdminBlogPage() {
                       <HiPencil />
                     </button>
                     <button
-                      onClick={() => handleDelete(post)}
+                      onClick={() => requestDelete(post)}
                       className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                     >
                       <HiTrash />
@@ -206,7 +217,7 @@ export default function AdminBlogPage() {
                           <HiPencil />
                         </button>
                         <button
-                          onClick={() => handleDelete(post)}
+                          onClick={() => requestDelete(post)}
                           className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                         >
                           <HiTrash />
@@ -260,6 +271,21 @@ export default function AdminBlogPage() {
           </div>
         </form>
       </AdminModal>
+
+      <DeleteConfirmModal
+        open={!!deletingPost}
+        title="Delete Post"
+        description={
+          deletingPost
+            ? `Are you sure you want to delete "${deletingPost.title}"? This action cannot be undone.`
+            : ""
+        }
+        loading={deleting}
+        onClose={() => {
+          if (!deleting) setDeletingPost(null);
+        }}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

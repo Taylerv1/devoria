@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import AdminModal from "@/components/admin/AdminModal";
+import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import AdminGuard from "@/components/admin/AdminGuard";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { HiPencil, HiTrash, HiPlus, HiEye, HiEyeOff } from "react-icons/hi";
@@ -141,6 +142,7 @@ export default function AdminUsersPage() {
   const [saving, setSaving] = useState(false);
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
   const [showAddPassword, setShowAddPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
@@ -239,15 +241,19 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function handleDelete(user: AdminUser) {
-    if (!confirm(`Remove user "${user.displayName || user.email}"?`)) return;
-    setDeletingId(user.id);
+  function requestDelete(user: AdminUser) {
+    setDeletingUser(user);
+  }
+
+  async function handleDelete() {
+    if (!deletingUser) return;
+    setDeletingId(deletingUser.id);
 
     try {
       const res = await fetch("/api/admin/users", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: user.id }),
+        body: JSON.stringify({ uid: deletingUser.id }),
       });
 
       if (!res.ok) {
@@ -257,7 +263,8 @@ export default function AdminUsersPage() {
         throw new Error(payload?.error || "Failed to delete user");
       }
 
-      setUsers((current) => current.filter((item) => item.id !== user.id));
+      setUsers((current) => current.filter((item) => item.id !== deletingUser.id));
+      setDeletingUser(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete user");
     } finally {
@@ -379,7 +386,7 @@ export default function AdminUsersPage() {
                               <HiPencil />
                             </button>
                             <button
-                              onClick={() => handleDelete(user)}
+                              onClick={() => requestDelete(user)}
                               disabled={isCurrentAdmin || deletingId === user.id}
                               title={
                                 isCurrentAdmin
@@ -471,7 +478,7 @@ export default function AdminUsersPage() {
                                   <HiPencil />
                                 </button>
                                 <button
-                                  onClick={() => handleDelete(user)}
+                                  onClick={() => requestDelete(user)}
                                   disabled={isCurrentAdmin || deletingId === user.id}
                                   title={
                                     isCurrentAdmin
@@ -643,6 +650,21 @@ export default function AdminUsersPage() {
                 </div>
               </form>
             </AdminModal>
+
+            <DeleteConfirmModal
+              open={!!deletingUser}
+              title="Delete User"
+              description={
+                deletingUser
+                  ? `Are you sure you want to remove "${deletingUser.displayName || deletingUser.email}"? This action cannot be undone.`
+                  : ""
+              }
+              loading={!!deletingId}
+              onClose={() => {
+                if (!deletingId) setDeletingUser(null);
+              }}
+              onConfirm={handleDelete}
+            />
           </>
         )}
       </div>

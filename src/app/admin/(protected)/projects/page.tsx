@@ -15,6 +15,7 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import AdminModal from "@/components/admin/AdminModal";
+import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { slugify } from "@/utils";
@@ -41,6 +42,8 @@ export default function AdminProjectsPage() {
   const [saving, setSaving] = useState(false);
   const [coverImage, setCoverImage] = useState("");
   const [images, setImages] = useState<string[]>([]);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   function openCreate() {
     setEditing(null);
@@ -115,13 +118,21 @@ export default function AdminProjectsPage() {
     }
   }
 
-  async function handleDelete(project: Project) {
-    if (!confirm(`Delete "${project.title}"?`)) return;
+  function requestDelete(project: Project) {
+    setDeletingProject(project);
+  }
+
+  async function handleDelete() {
+    if (!deletingProject) return;
+    setDeleting(true);
     try {
-      await deleteDocument("projects", project.id);
-      setData(projects.filter((p) => p.id !== project.id));
+      await deleteDocument("projects", deletingProject.id);
+      setData(projects.filter((p) => p.id !== deletingProject.id));
+      setDeletingProject(null);
     } catch {
       alert("Failed to delete project.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -189,7 +200,7 @@ export default function AdminProjectsPage() {
                       <HiPencil />
                     </button>
                     <button
-                      onClick={() => handleDelete(project)}
+                      onClick={() => requestDelete(project)}
                       className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                     >
                       <HiTrash />
@@ -247,7 +258,7 @@ export default function AdminProjectsPage() {
                           <HiPencil />
                         </button>
                         <button
-                          onClick={() => handleDelete(project)}
+                          onClick={() => requestDelete(project)}
                           className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                         >
                           <HiTrash />
@@ -342,6 +353,21 @@ export default function AdminProjectsPage() {
           </div>
         </form>
       </AdminModal>
+
+      <DeleteConfirmModal
+        open={!!deletingProject}
+        title="Delete Project"
+        description={
+          deletingProject
+            ? `Are you sure you want to delete "${deletingProject.title}"? This action cannot be undone.`
+            : ""
+        }
+        loading={deleting}
+        onClose={() => {
+          if (!deleting) setDeletingProject(null);
+        }}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

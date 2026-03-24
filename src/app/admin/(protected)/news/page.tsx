@@ -15,6 +15,7 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import AdminModal from "@/components/admin/AdminModal";
+import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { slugify, formatDate } from "@/utils";
@@ -30,6 +31,8 @@ export default function AdminNewsPage() {
   const [editing, setEditing] = useState<NewsItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [coverImage, setCoverImage] = useState("");
+  const [deletingItem, setDeletingItem] = useState<NewsItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   function openCreate() {
     setEditing(null);
@@ -87,13 +90,21 @@ export default function AdminNewsPage() {
     }
   }
 
-  async function handleDelete(item: NewsItem) {
-    if (!confirm(`Delete "${item.title}"?`)) return;
+  function requestDelete(item: NewsItem) {
+    setDeletingItem(item);
+  }
+
+  async function handleDelete() {
+    if (!deletingItem) return;
+    setDeleting(true);
     try {
-      await deleteDocument("news", item.id);
-      setData(news.filter((n) => n.id !== item.id));
+      await deleteDocument("news", deletingItem.id);
+      setData(news.filter((n) => n.id !== deletingItem.id));
+      setDeletingItem(null);
     } catch {
       alert("Failed to delete news item.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -150,7 +161,7 @@ export default function AdminNewsPage() {
                       <HiPencil />
                     </button>
                     <button
-                      onClick={() => handleDelete(item)}
+                      onClick={() => requestDelete(item)}
                       className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                     >
                       <HiTrash />
@@ -197,7 +208,7 @@ export default function AdminNewsPage() {
                           <HiPencil />
                         </button>
                         <button
-                          onClick={() => handleDelete(item)}
+                          onClick={() => requestDelete(item)}
                           className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                         >
                           <HiTrash />
@@ -249,6 +260,21 @@ export default function AdminNewsPage() {
           </div>
         </form>
       </AdminModal>
+
+      <DeleteConfirmModal
+        open={!!deletingItem}
+        title="Delete News Item"
+        description={
+          deletingItem
+            ? `Are you sure you want to delete "${deletingItem.title}"? This action cannot be undone.`
+            : ""
+        }
+        loading={deleting}
+        onClose={() => {
+          if (!deleting) setDeletingItem(null);
+        }}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

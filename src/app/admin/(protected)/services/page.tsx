@@ -15,6 +15,7 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import AdminModal from "@/components/admin/AdminModal";
+import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 
@@ -42,6 +43,8 @@ export default function AdminServicesPage() {
   const [editing, setEditing] = useState<Service | null>(null);
   const [saving, setSaving] = useState(false);
   const [image, setImage] = useState("");
+  const [deletingService, setDeletingService] = useState<Service | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   function openCreate() {
     setEditing(null);
@@ -92,13 +95,21 @@ export default function AdminServicesPage() {
     }
   }
 
-  async function handleDelete(service: Service) {
-    if (!confirm(`Delete "${service.title}"?`)) return;
+  function requestDelete(service: Service) {
+    setDeletingService(service);
+  }
+
+  async function handleDelete() {
+    if (!deletingService) return;
+    setDeleting(true);
     try {
-      await deleteDocument("services", service.id);
-      setData(services.filter((s) => s.id !== service.id));
+      await deleteDocument("services", deletingService.id);
+      setData(services.filter((s) => s.id !== deletingService.id));
+      setDeletingService(null);
     } catch {
       alert("Failed to delete service.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -161,7 +172,7 @@ export default function AdminServicesPage() {
                       <HiPencil />
                     </button>
                     <button
-                      onClick={() => handleDelete(service)}
+                      onClick={() => requestDelete(service)}
                       className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                     >
                       <HiTrash />
@@ -212,7 +223,7 @@ export default function AdminServicesPage() {
                           <HiPencil />
                         </button>
                         <button
-                          onClick={() => handleDelete(service)}
+                          onClick={() => requestDelete(service)}
                           className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                         >
                           <HiTrash />
@@ -276,6 +287,21 @@ export default function AdminServicesPage() {
           </div>
         </form>
       </AdminModal>
+
+      <DeleteConfirmModal
+        open={!!deletingService}
+        title="Delete Service"
+        description={
+          deletingService
+            ? `Are you sure you want to delete "${deletingService.title}"? This action cannot be undone.`
+            : ""
+        }
+        loading={deleting}
+        onClose={() => {
+          if (!deleting) setDeletingService(null);
+        }}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

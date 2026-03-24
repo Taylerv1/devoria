@@ -10,6 +10,7 @@ import { ContactMessage } from "@/types";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import AdminModal from "@/components/admin/AdminModal";
+import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import { HiEye, HiTrash } from "react-icons/hi";
 import { formatDate } from "@/utils";
 import { useState } from "react";
@@ -22,6 +23,8 @@ export default function AdminMessagesPage() {
   } = useFirestore<ContactMessage>("messages", orderBy("createdAt", "desc"));
 
   const [viewing, setViewing] = useState<ContactMessage | null>(null);
+  const [deletingMessage, setDeletingMessage] = useState<ContactMessage | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleView(msg: ContactMessage) {
     setViewing(msg);
@@ -37,13 +40,21 @@ export default function AdminMessagesPage() {
     }
   }
 
-  async function handleDelete(msg: ContactMessage) {
-    if (!confirm(`Delete message from "${msg.name}"?`)) return;
+  function requestDelete(msg: ContactMessage) {
+    setDeletingMessage(msg);
+  }
+
+  async function handleDelete() {
+    if (!deletingMessage) return;
+    setDeleting(true);
     try {
-      await deleteDocument("messages", msg.id);
-      setData(messages.filter((m) => m.id !== msg.id));
+      await deleteDocument("messages", deletingMessage.id);
+      setData(messages.filter((m) => m.id !== deletingMessage.id));
+      setDeletingMessage(null);
     } catch {
       alert("Failed to delete message.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -109,7 +120,7 @@ export default function AdminMessagesPage() {
                     <HiEye />
                   </button>
                   <button
-                    onClick={() => handleDelete(msg)}
+                    onClick={() => requestDelete(msg)}
                     className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                   >
                     <HiTrash />
@@ -158,7 +169,7 @@ export default function AdminMessagesPage() {
                           <HiEye />
                         </button>
                         <button
-                          onClick={() => handleDelete(msg)}
+                          onClick={() => requestDelete(msg)}
                           className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
                         >
                           <HiTrash />
@@ -205,6 +216,21 @@ export default function AdminMessagesPage() {
           </div>
         )}
       </AdminModal>
+
+      <DeleteConfirmModal
+        open={!!deletingMessage}
+        title="Delete Message"
+        description={
+          deletingMessage
+            ? `Are you sure you want to delete the message from "${deletingMessage.name}"? This action cannot be undone.`
+            : ""
+        }
+        loading={deleting}
+        onClose={() => {
+          if (!deleting) setDeletingMessage(null);
+        }}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
