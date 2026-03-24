@@ -64,16 +64,28 @@ export default function ServicesPreview() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {displayed.map((service) => (
-            <Card key={service.id}>
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary-light)]">
-                {ICON_MAP[service.icon] ?? <HiCode className="text-2xl" />}
+            <Card key={service.id} className="overflow-hidden p-0">
+              <div className="relative h-40 bg-[var(--color-dark-border)]">
+                {service.image ? (
+                  <img
+                    src={service.image}
+                    alt={service.title}
+                    className="h-full w-full object-cover"
+                  />
+                ) : null}
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-dark)] via-[var(--color-dark)]/20 to-transparent" />
+                <div className="absolute bottom-4 left-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--color-primary)]/15 text-[var(--color-primary-light)] backdrop-blur">
+                  {ICON_MAP[service.icon] ?? <HiCode className="text-2xl" />}
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-white">
-                {service.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-muted)]">
-                {service.description}
-              </p>
+              <div className="p-5 sm:p-6">
+                <h3 className="text-lg font-semibold text-white">
+                  {service.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-muted)]">
+                  {service.description}
+                </p>
+              </div>
             </Card>
           ))}
         </div>
