@@ -53,10 +53,10 @@ function DashboardContent() {
   } = useFirestore<ContactMessage>("messages", orderBy("createdAt", "desc"));
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchCounts() {
-      const collections = canSeeUsers
-        ? ["projects", "blog", "news", "messages", "services", "users"]
-        : ["projects", "blog", "news", "messages", "services"];
+      const collections = ["projects", "blog", "news", "messages", "services"];
       const results = await Promise.allSettled(
         collections.map((collection) => getCollectionCount(collection))
       );
@@ -65,10 +65,38 @@ function DashboardContent() {
         newCounts[collection] =
           results[index].status === "fulfilled" ? results[index].value : 0;
       });
-      setCounts((current) => ({ ...current, ...newCounts }));
+
+      if (canSeeUsers) {
+        try {
+          const res = await fetch("/api/admin/users", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
+
+          if (!res.ok) {
+            throw new Error("Failed to load users count");
+          }
+
+          const payload = (await res.json()) as { users?: Array<{ id: string }> };
+          newCounts.users = Array.isArray(payload.users) ? payload.users.length : 0;
+        } catch (err) {
+          console.error("Load users count failed:", err);
+          newCounts.users = 0;
+        }
+      } else {
+        newCounts.users = null;
+      }
+
+      if (!cancelled) {
+        setCounts((current) => ({ ...current, ...newCounts }));
+      }
     }
 
-    fetchCounts();
+    void fetchCounts();
+
+    return () => {
+      cancelled = true;
+    };
   }, [canSeeUsers]);
 
   const unreadCount = recentMessages.filter((message) => !message.read).length;
