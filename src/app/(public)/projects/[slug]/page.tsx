@@ -85,29 +85,31 @@ export default function ProjectDetailPage({ params }: PageProps) {
   if (!project) {
     return (
       <Section>
-        <Link
-          href="/projects"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white"
-        >
-          <HiArrowLeft /> Back to Projects
-        </Link>
-        <p className="py-12 text-center text-[var(--color-text-muted)]">
-          Project not found.
-        </p>
+        <div className="mx-auto max-w-4xl">
+          <Link
+            href="/projects"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white"
+          >
+            <HiArrowLeft /> Back to Projects
+          </Link>
+          <p className="py-12 text-center text-[var(--color-text-muted)]">
+            Project not found.
+          </p>
+        </div>
       </Section>
     );
   }
 
   return (
     <Section>
-      <Link
-        href="/projects"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white sm:mb-8"
-      >
-        <HiArrowLeft /> Back to Projects
-      </Link>
-
       <div className="mx-auto max-w-4xl">
+        <Link
+          href="/projects"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white sm:mb-8"
+        >
+          <HiArrowLeft /> Back to Projects
+        </Link>
+
         {/* Cover image */}
         <div className="mb-6 h-48 overflow-hidden rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] sm:mb-8 sm:h-64 sm:rounded-2xl md:h-96">
           {project.coverImage ? (

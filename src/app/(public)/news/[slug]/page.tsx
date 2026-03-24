@@ -53,29 +53,31 @@ export default function NewsDetailPage({ params }: PageProps) {
   if (!newsItem) {
     return (
       <Section>
-        <Link
-          href="/news"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white"
-        >
-          <HiArrowLeft /> Back to News
-        </Link>
-        <p className="py-12 text-center text-[var(--color-text-muted)]">
-          News article not found.
-        </p>
+        <div className="mx-auto max-w-3xl">
+          <Link
+            href="/news"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white"
+          >
+            <HiArrowLeft /> Back to News
+          </Link>
+          <p className="py-12 text-center text-[var(--color-text-muted)]">
+            News article not found.
+          </p>
+        </div>
       </Section>
     );
   }
 
   return (
     <Section>
-      <Link
-        href="/news"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white sm:mb-8"
-      >
-        <HiArrowLeft /> Back to News
-      </Link>
-
       <article className="mx-auto max-w-3xl">
+        <Link
+          href="/news"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white sm:mb-8"
+        >
+          <HiArrowLeft /> Back to News
+        </Link>
+
         <div className="mb-4 text-sm text-[var(--color-primary-light)]">
           {newsItem.createdAt ? formatDate(newsItem.createdAt) : ""}
         </div>

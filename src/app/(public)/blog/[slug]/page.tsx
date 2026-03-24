@@ -46,29 +46,31 @@ export default function BlogPostPage({ params }: PageProps) {
   if (!post) {
     return (
       <Section>
-        <Link
-          href="/blog"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white"
-        >
-          <HiArrowLeft /> Back to Blog
-        </Link>
-        <p className="py-12 text-center text-[var(--color-text-muted)]">
-          Blog post not found.
-        </p>
+        <div className="mx-auto max-w-3xl">
+          <Link
+            href="/blog"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white"
+          >
+            <HiArrowLeft /> Back to Blog
+          </Link>
+          <p className="py-12 text-center text-[var(--color-text-muted)]">
+            Blog post not found.
+          </p>
+        </div>
       </Section>
     );
   }
 
   return (
     <Section>
-      <Link
-        href="/blog"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white sm:mb-8"
-      >
-        <HiArrowLeft /> Back to Blog
-      </Link>
-
       <article className="mx-auto max-w-3xl">
+        <Link
+          href="/blog"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-white sm:mb-8"
+        >
+          <HiArrowLeft /> Back to Blog
+        </Link>
+
         <div className="mb-4 flex items-center gap-3 text-sm text-[var(--color-text-muted)]">
           <span>{post.createdAt ? formatDate(post.createdAt) : ""}</span>
           <span>&middot;</span>
