@@ -59,28 +59,40 @@ export default function ServicesPage() {
       ) : (
         <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:gap-8">
           {services.map((service) => (
-            <Card key={service.id} className="p-5 sm:p-7 lg:p-8">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary-light)] sm:mb-5 sm:h-14 sm:w-14">
-                {ICON_MAP[service.icon] ?? <HiCode className="text-3xl" />}
-              </div>
-              <h3 className="text-xl font-semibold text-white">
-                {service.title}
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
-                {service.description}
-              </p>
-              {service.features?.length > 0 && (
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {service.features.map((feature) => (
-                    <span
-                      key={feature}
-                      className="rounded-full bg-white/5 px-3 py-1 text-xs text-[var(--color-text-muted)]"
-                    >
-                      {feature}
-                    </span>
-                  ))}
+            <Card key={service.id} className="overflow-hidden p-0">
+              <div className="relative h-48 bg-[var(--color-dark-border)]">
+                {service.image ? (
+                  <img
+                    src={service.image}
+                    alt={service.title}
+                    className="h-full w-full object-cover"
+                  />
+                ) : null}
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-dark)] via-[var(--color-dark)]/20 to-transparent" />
+                <div className="absolute bottom-4 left-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)]/15 text-[var(--color-primary-light)] backdrop-blur">
+                  {ICON_MAP[service.icon] ?? <HiCode className="text-3xl" />}
                 </div>
-              )}
+              </div>
+              <div className="p-5 sm:p-7 lg:p-8">
+                <h3 className="text-xl font-semibold text-white">
+                  {service.title}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
+                  {service.description}
+                </p>
+                {service.features?.length > 0 && (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {service.features.map((feature) => (
+                      <span
+                        key={feature}
+                        className="rounded-full bg-white/5 px-3 py-1 text-xs text-[var(--color-text-muted)]"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Card>
           ))}
         </div>

@@ -36,24 +36,39 @@ export default function BlogPage() {
         <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:gap-8">
           {posts.map((post) => (
             <Link key={post.id} href={`/blog/${post.slug}`}>
-              <Card className="group h-full">
-                <div className="mb-3 flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
-                  <span>{post.createdAt ? formatDate(post.createdAt) : ""}</span>
-                  <span>&middot;</span>
-                  <span>{post.author}</span>
+              <Card className="group h-full overflow-hidden p-0">
+                <div className="h-44 overflow-hidden bg-[var(--color-dark-border)]">
+                  {post.coverImage ? (
+                    <img
+                      src={post.coverImage}
+                      alt={post.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-[var(--color-text-muted)]">
+                      Blog Cover
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-lg font-semibold text-white transition-colors group-hover:text-[var(--color-primary-light)]">
-                  {post.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-muted)]">
-                  {post.excerpt}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {post.tags?.map((tag) => (
-                    <Badge key={tag} variant="muted">
-                      {tag}
-                    </Badge>
-                  ))}
+                <div className="p-5 sm:p-6">
+                  <div className="mb-3 flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
+                    <span>{post.createdAt ? formatDate(post.createdAt) : ""}</span>
+                    <span>&middot;</span>
+                    <span>{post.author}</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-white transition-colors group-hover:text-[var(--color-primary-light)]">
+                    {post.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-muted)]">
+                    {post.excerpt}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {post.tags?.map((tag) => (
+                      <Badge key={tag} variant="muted">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </Card>
             </Link>

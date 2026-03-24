@@ -13,17 +13,17 @@ const contactInfo = [
   {
     icon: <HiMail className="text-xl" />,
     label: "Email",
-    value: "hello@devoria.dev",
+    value: "devoriateam@gmail.com",
   },
   {
     icon: <HiPhone className="text-xl" />,
     label: "Phone",
-    value: "+1 (555) 000-0000",
+    value: "+961 65544257",
   },
   {
     icon: <HiLocationMarker className="text-xl" />,
     label: "Location",
-    value: "San Francisco, CA",
+    value: "Lebanon, Saida",
   },
 ];
 
@@ -113,14 +113,14 @@ export default function ContactPage() {
                   <Input
                     label="Name"
                     name="name"
-                    placeholder="John Doe"
+                    placeholder="Ali Hassan"
                     required
                   />
                   <Input
                     label="Email"
                     name="email"
                     type="email"
-                    placeholder="john@example.com"
+                    placeholder="ali@example.com"
                     required
                   />
                 </div>

@@ -50,6 +50,7 @@ export interface Service {
   title: string;
   description: string;
   icon: string;
+  image?: string;
   features: string[];
   order: number;
   status: "active" | "inactive";

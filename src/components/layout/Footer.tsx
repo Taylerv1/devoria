@@ -64,9 +64,9 @@ export default function Footer() {
               Contact
             </h4>
             <div className="flex flex-col gap-3 text-sm text-[var(--color-text-muted)]">
-              <span>hello@devoria.dev</span>
-              <span>+1 (555) 000-0000</span>
-              <span>San Francisco, CA</span>
+              <span>devoriateam@gmail.com</span>
+              <span>+961 65544257</span>
+              <span>Lebanon, Saida</span>
             </div>
           </div>
         </div>

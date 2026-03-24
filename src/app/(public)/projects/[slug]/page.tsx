@@ -206,8 +206,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
             ) : (
               <form onSubmit={handleInterestSubmit} className="space-y-5">
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Input label="Name" name="name" placeholder="John Doe" required />
-                  <Input label="Email" name="email" type="email" placeholder="john@example.com" required />
+                  <Input label="Name" name="name" placeholder="Ali Hassan" required />
+                  <Input label="Email" name="email" type="email" placeholder="ali@example.com" required />
                 </div>
                 <Textarea label="Tell us about your project" name="message" placeholder="Describe your project needs..." required />
                 <Button type="submit" disabled={interestSending}>

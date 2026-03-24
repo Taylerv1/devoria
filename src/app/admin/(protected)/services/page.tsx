@@ -15,6 +15,7 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import AdminModal from "@/components/admin/AdminModal";
+import ImageUpload from "@/components/admin/ImageUpload";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 
 const ICON_OPTIONS = [
@@ -40,14 +41,17 @@ export default function AdminServicesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
   const [saving, setSaving] = useState(false);
+  const [image, setImage] = useState("");
 
   function openCreate() {
     setEditing(null);
+    setImage("");
     setModalOpen(true);
   }
 
   function openEdit(service: Service) {
     setEditing(service);
+    setImage(service.image || "");
     setModalOpen(true);
   }
 
@@ -60,6 +64,7 @@ export default function AdminServicesPage() {
       title: form.get("title") as string,
       description: form.get("description") as string,
       icon: form.get("icon") as string,
+      image,
       features: (form.get("features") as string)
         .split("\n")
         .map((f) => f.trim())
@@ -130,7 +135,16 @@ export default function AdminServicesPage() {
           <div className="space-y-3 sm:hidden">
             {services.map((service) => (
               <div key={service.id} className="rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] p-4">
-                <p className="font-medium text-white">{service.title}</p>
+                <div className="flex items-start gap-3">
+                  {service.image && (
+                    <img
+                      src={service.image}
+                      alt=""
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                  )}
+                  <p className="font-medium text-white">{service.title}</p>
+                </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                   <p className="text-[var(--color-text-muted)]">Order</p>
                   <p className="text-right text-[var(--color-text)]">#{service.order}</p>
@@ -172,7 +186,18 @@ export default function AdminServicesPage() {
                 {services.map((service) => (
                   <tr key={service.id} className="border-b border-[var(--color-dark-border)] last:border-0">
                     <td className="py-4 text-[var(--color-text-muted)]">#{service.order}</td>
-                    <td className="py-4 font-medium text-white">{service.title}</td>
+                    <td className="py-4">
+                      <div className="flex items-center gap-3">
+                        {service.image && (
+                          <img
+                            src={service.image}
+                            alt=""
+                            className="h-10 w-10 rounded-lg object-cover"
+                          />
+                        )}
+                        <p className="font-medium text-white">{service.title}</p>
+                      </div>
+                    </td>
                     <td className="py-4">
                       <Badge variant={service.status === "active" ? "accent" : "muted"}>
                         {service.status}
@@ -226,6 +251,12 @@ export default function AdminServicesPage() {
             <Input label="Order" name="order" type="number" required defaultValue={editing?.order ?? services.length + 1} />
           </div>
           <Textarea label="Features (one per line)" name="features" defaultValue={editing?.features?.join("\n") ?? ""} />
+          <ImageUpload
+            label="Service Image"
+            value={image}
+            onChange={(url) => setImage(url as string)}
+            folder="services"
+          />
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[var(--color-text)]">Status</label>
             <select
