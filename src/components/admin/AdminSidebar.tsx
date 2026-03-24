@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/utils";
 import { signOut } from "@/firebase/auth";
 import { useAuth, UserRole } from "@/context/AuthContext";
+import devoriaLogo from "../../../devoriaLogo.png";
 import {
   HiViewGrid,
   HiFolder,
@@ -52,9 +54,15 @@ export default function AdminSidebar() {
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-[var(--color-dark-border)] bg-[var(--color-dark-card)]">
       <div className="flex items-center gap-3 border-b border-[var(--color-dark-border)] px-6 py-5">
-        <span className="text-xl font-bold">
-          <span className="text-[var(--color-primary-light)]">Dev</span>oria
-        </span>
+        <Link href="/" className="relative block h-10 w-36 shrink-0 overflow-hidden">
+          <Image
+            src={devoriaLogo}
+            alt="Devoria"
+            fill
+            sizes="144px"
+            className="object-cover [object-position:50%_45%] scale-130 -translate-x-[5%]"
+          />
+        </Link>
         <span className="rounded-md bg-[var(--color-primary)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-primary-light)]">
           Admin
         </span>
