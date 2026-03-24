@@ -10,6 +10,7 @@ interface AdminModalProps {
   title: string;
   children: ReactNode;
   className?: string;
+  align?: "top" | "center";
 }
 
 export default function AdminModal({
@@ -18,6 +19,7 @@ export default function AdminModal({
   title,
   children,
   className,
+  align = "top",
 }: AdminModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +41,10 @@ export default function AdminModal({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-3 sm:items-start sm:p-4 sm:pt-[10vh]"
+      className={cn(
+        "fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/60 p-3 sm:p-4",
+        align === "center" ? "items-center" : "items-center sm:items-start sm:pt-[10vh]"
+      )}
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}

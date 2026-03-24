@@ -23,7 +23,13 @@ export default function DeleteConfirmModal({
   onConfirm,
 }: DeleteConfirmModalProps) {
   return (
-    <AdminModal open={open} onClose={onClose} title={title} className="max-w-md">
+    <AdminModal
+      open={open}
+      onClose={onClose}
+      title={title}
+      className="max-w-md"
+      align="center"
+    >
       <div className="space-y-5">
         <p className="text-sm leading-relaxed text-[var(--color-text-muted)]">
           {description}
