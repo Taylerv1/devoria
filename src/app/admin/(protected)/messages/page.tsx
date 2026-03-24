@@ -11,11 +11,23 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
+import AdminGuard from "@/components/admin/AdminGuard";
 import { HiEye, HiTrash } from "react-icons/hi";
 import { formatDate } from "@/utils";
 import { useState } from "react";
 
 export default function AdminMessagesPage() {
+  return (
+    <AdminGuard
+      allowedRoles={["admin", "editor"]}
+      unauthorizedMode="not-found"
+    >
+      <AdminMessagesContent />
+    </AdminGuard>
+  );
+}
+
+function AdminMessagesContent() {
   const {
     data: messages,
     loading,

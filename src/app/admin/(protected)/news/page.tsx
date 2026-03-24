@@ -16,11 +16,23 @@ import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
+import AdminGuard from "@/components/admin/AdminGuard";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { slugify, formatDate } from "@/utils";
 
 export default function AdminNewsPage() {
+  return (
+    <AdminGuard
+      allowedRoles={["admin", "blog_manager"]}
+      unauthorizedMode="not-found"
+    >
+      <AdminNewsContent />
+    </AdminGuard>
+  );
+}
+
+function AdminNewsContent() {
   const {
     data: news,
     loading,

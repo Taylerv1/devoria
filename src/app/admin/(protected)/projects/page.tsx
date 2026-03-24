@@ -16,6 +16,7 @@ import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
+import AdminGuard from "@/components/admin/AdminGuard";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { slugify } from "@/utils";
@@ -31,6 +32,17 @@ const CATEGORY_OPTIONS = [
 ];
 
 export default function AdminProjectsPage() {
+  return (
+    <AdminGuard
+      allowedRoles={["admin", "editor"]}
+      unauthorizedMode="not-found"
+    >
+      <AdminProjectsContent />
+    </AdminGuard>
+  );
+}
+
+function AdminProjectsContent() {
   const {
     data: projects,
     loading,

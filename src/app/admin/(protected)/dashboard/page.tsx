@@ -28,7 +28,10 @@ interface StatCard {
 
 export default function DashboardPage() {
   return (
-    <AdminGuard allowedRoles={["admin", "editor"]}>
+    <AdminGuard
+      allowedRoles={["admin", "editor"]}
+      unauthorizedMode="not-found"
+    >
       <DashboardContent />
     </AdminGuard>
   );

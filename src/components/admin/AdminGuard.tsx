@@ -4,17 +4,20 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { getAdminHomeRoute } from "@/lib/admin-routes";
+import AdminNotFound from "@/components/admin/AdminNotFound";
 
 const VALID_ROLES: readonly UserRole[] = ["admin", "editor", "blog_manager"];
 
 interface AdminGuardProps {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
+  unauthorizedMode?: "redirect" | "not-found";
 }
 
 export default function AdminGuard({
   children,
   allowedRoles = [...VALID_ROLES],
+  unauthorizedMode = "redirect",
 }: AdminGuardProps) {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
@@ -39,10 +42,13 @@ export default function AdminGuard({
       return;
     }
 
-    if (!(allowedRoles as string[]).includes(profile.role)) {
+    if (
+      unauthorizedMode === "redirect" &&
+      !(allowedRoles as string[]).includes(profile.role)
+    ) {
       router.replace(getAdminHomeRoute(profile.role));
     }
-  }, [user, profile, loading, router, allowedRoles]);
+  }, [user, profile, loading, router, allowedRoles, unauthorizedMode]);
 
   if (loading) {
     return (
@@ -53,6 +59,16 @@ export default function AdminGuard({
   }
 
   if (!isAuthorized) {
+    if (
+      unauthorizedMode === "not-found" &&
+      !loading &&
+      user !== null &&
+      profile !== null &&
+      (VALID_ROLES as readonly string[]).includes(profile.role)
+    ) {
+      return <AdminNotFound variant="unauthorized" />;
+    }
+
     return null;
   }
 

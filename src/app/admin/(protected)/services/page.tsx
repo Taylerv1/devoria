@@ -16,6 +16,7 @@ import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
+import AdminGuard from "@/components/admin/AdminGuard";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { cn } from "@/utils";
 import { IconType } from "react-icons";
@@ -152,6 +153,17 @@ function IconSelect({
 }
 
 export default function AdminServicesPage() {
+  return (
+    <AdminGuard
+      allowedRoles={["admin", "editor"]}
+      unauthorizedMode="not-found"
+    >
+      <AdminServicesContent />
+    </AdminGuard>
+  );
+}
+
+function AdminServicesContent() {
   const {
     data: services,
     loading,

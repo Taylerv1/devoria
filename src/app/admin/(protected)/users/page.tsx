@@ -313,7 +313,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <AdminGuard allowedRoles={["admin"]}>
+    <AdminGuard allowedRoles={["admin"]} unauthorizedMode="not-found">
       <div>
         {loading ? (
           <div className="flex items-center justify-center py-20">
