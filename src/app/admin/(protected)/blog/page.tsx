@@ -146,8 +146,19 @@ export default function AdminBlogPage() {
           <div className="space-y-3 sm:hidden">
             {posts.map((post) => (
               <div key={post.id} className="rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] p-4">
-                <p className="font-medium text-white">{post.title}</p>
-                <p className="text-xs text-[var(--color-text-muted)]">/{post.slug}</p>
+                <div className="flex items-start gap-3">
+                  {post.coverImage && (
+                    <img
+                      src={post.coverImage}
+                      alt=""
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-white">{post.title}</p>
+                    <p className="truncate text-xs text-[var(--color-text-muted)]">/{post.slug}</p>
+                  </div>
+                </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                   <p className="text-[var(--color-text-muted)]">Author</p>
                   <p className="text-right text-[var(--color-text)]">{post.author}</p>
@@ -194,9 +205,18 @@ export default function AdminBlogPage() {
                 {posts.map((post) => (
                   <tr key={post.id} className="border-b border-[var(--color-dark-border)] last:border-0">
                     <td className="py-4">
-                      <div>
-                        <p className="font-medium text-white">{post.title}</p>
-                        <p className="text-xs text-[var(--color-text-muted)]">/{post.slug}</p>
+                      <div className="flex items-center gap-3">
+                        {post.coverImage && (
+                          <img
+                            src={post.coverImage}
+                            alt=""
+                            className="h-10 w-10 rounded-lg object-cover"
+                          />
+                        )}
+                        <div>
+                          <p className="font-medium text-white">{post.title}</p>
+                          <p className="text-xs text-[var(--color-text-muted)]">/{post.slug}</p>
+                        </div>
                       </div>
                     </td>
                     <td className="py-4 text-[var(--color-text-muted)]">{post.author}</td>
