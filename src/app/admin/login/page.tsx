@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, FormEvent } from "react";
 import { signIn } from "@/firebase/auth";
 import { getDocument } from "@/firebase/firestore";
@@ -7,6 +8,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { getAdminHomeRoute } from "@/lib/admin-routes";
 import { UserRole } from "@/context/AuthContext";
+import devoriaLogo from "../../../../devoriaLogo.png";
 
 export default function AdminLoginPage() {
   const [error, setError] = useState("");
@@ -80,9 +82,16 @@ export default function AdminLoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-dark)] px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <span className="text-3xl font-bold">
-            <span className="text-[var(--color-primary-light)]">Dev</span>oria
-          </span>
+          <div className="relative mx-auto h-[78px] w-full max-w-[240px] overflow-hidden">
+            <Image
+              src={devoriaLogo}
+              alt="Devoria"
+              fill
+              sizes="240px"
+              priority
+              className="object-cover object-center"
+            />
+          </div>
           <p className="mt-2 text-sm text-[var(--color-text-muted)]">
             Sign in to the admin panel
           </p>
