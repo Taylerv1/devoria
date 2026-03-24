@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect, useRef } from "react";
 import { useFirestore } from "@/hooks/useFirestore";
 import {
   createDocument,
@@ -17,20 +17,139 @@ import Textarea from "@/components/ui/Textarea";
 import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import ImageUpload from "@/components/admin/ImageUpload";
-import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
+import { cn } from "@/utils";
+import { IconType } from "react-icons";
+import {
+  HiPlus,
+  HiPencil,
+  HiTrash,
+  HiCode,
+  HiDeviceMobile,
+  HiColorSwatch,
+  HiCloud,
+  HiLightningBolt,
+  HiShieldCheck,
+  HiDatabase,
+  HiChatAlt2,
+  HiCog,
+  HiGlobe,
+  HiCheck,
+  HiChevronDown,
+} from "react-icons/hi";
 
-const ICON_OPTIONS = [
-  "HiCode",
-  "HiDeviceMobile",
-  "HiColorSwatch",
-  "HiCloud",
-  "HiLightningBolt",
-  "HiShieldCheck",
-  "HiDatabase",
-  "HiChatAlt",
-  "HiCog",
-  "HiGlobe",
+type IconOption = {
+  value: string;
+  Icon: IconType;
+};
+
+const ICON_OPTIONS: IconOption[] = [
+  { value: "HiCode", Icon: HiCode },
+  { value: "HiDeviceMobile", Icon: HiDeviceMobile },
+  { value: "HiColorSwatch", Icon: HiColorSwatch },
+  { value: "HiCloud", Icon: HiCloud },
+  { value: "HiLightningBolt", Icon: HiLightningBolt },
+  { value: "HiShieldCheck", Icon: HiShieldCheck },
+  { value: "HiDatabase", Icon: HiDatabase },
+  { value: "HiChatAlt", Icon: HiChatAlt2 },
+  { value: "HiCog", Icon: HiCog },
+  { value: "HiGlobe", Icon: HiGlobe },
 ];
+
+function IconSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const selected =
+    ICON_OPTIONS.find((option) => option.value === value) ?? ICON_OPTIONS[0];
+  const SelectedIcon = selected.Icon;
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!wrapperRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-[var(--color-text)]">Icon</label>
+      <div ref={wrapperRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          className="flex w-full items-center justify-between rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none transition-colors hover:border-[var(--color-primary)] focus:border-[var(--color-primary)]"
+        >
+          <span className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-[var(--color-primary-light)]">
+              <SelectedIcon className="text-lg" />
+            </span>
+            <span>{selected.value}</span>
+          </span>
+          <HiChevronDown
+            className={cn(
+              "text-base text-[var(--color-text-muted)] transition-transform",
+              open && "rotate-180"
+            )}
+          />
+        </button>
+
+        {open && (
+          <div className="absolute z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] p-1 shadow-2xl">
+            {ICON_OPTIONS.map((option) => {
+              const OptionIcon = option.Icon;
+              const isSelected = option.value === selected.value;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-white transition-colors hover:bg-white/5",
+                    isSelected && "bg-white/5"
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-[var(--color-primary-light)]">
+                      <OptionIcon className="text-lg" />
+                    </span>
+                    <span>{option.value}</span>
+                  </span>
+                  {isSelected ? (
+                    <HiCheck className="text-base text-[var(--color-primary-light)]" />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminServicesPage() {
   const {
@@ -43,18 +162,21 @@ export default function AdminServicesPage() {
   const [editing, setEditing] = useState<Service | null>(null);
   const [saving, setSaving] = useState(false);
   const [image, setImage] = useState("");
+  const [selectedIcon, setSelectedIcon] = useState(ICON_OPTIONS[0].value);
   const [deletingService, setDeletingService] = useState<Service | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   function openCreate() {
     setEditing(null);
     setImage("");
+    setSelectedIcon(ICON_OPTIONS[0].value);
     setModalOpen(true);
   }
 
   function openEdit(service: Service) {
     setEditing(service);
     setImage(service.image || "");
+    setSelectedIcon(service.icon || ICON_OPTIONS[0].value);
     setModalOpen(true);
   }
 
@@ -66,7 +188,7 @@ export default function AdminServicesPage() {
     const data = {
       title: form.get("title") as string,
       description: form.get("description") as string,
-      icon: form.get("icon") as string,
+      icon: selectedIcon,
       image,
       features: (form.get("features") as string)
         .split("\n")
@@ -247,18 +369,7 @@ export default function AdminServicesPage() {
           <Input label="Title" name="title" required defaultValue={editing?.title ?? ""} />
           <Textarea label="Description" name="description" required defaultValue={editing?.description ?? ""} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">Icon</label>
-              <select
-                name="icon"
-                defaultValue={editing?.icon ?? ICON_OPTIONS[0]}
-                className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none focus:border-[var(--color-primary)]"
-              >
-                {ICON_OPTIONS.map((icon) => (
-                  <option key={icon} value={icon}>{icon}</option>
-                ))}
-              </select>
-            </div>
+            <IconSelect value={selectedIcon} onChange={setSelectedIcon} />
             <Input label="Order" name="order" type="number" required defaultValue={editing?.order ?? services.length + 1} />
           </div>
           <Textarea label="Features (one per line)" name="features" defaultValue={editing?.features?.join("\n") ?? ""} />
