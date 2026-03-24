@@ -175,10 +175,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { uid, role, displayName } = body;
+    const { uid, role, displayName, password } = body;
 
     if (typeof uid !== "string" || !uid || !isUserRole(role)) {
       return jsonError("User ID and a valid role are required.", 400);
+    }
+
+    if (
+      typeof password === "string" &&
+      password.length > 0 &&
+      password.length < 6
+    ) {
+      return jsonError("Password must be at least 6 characters.", 400);
     }
 
     if (uid === adminCheck.currentUser.id && role !== "admin") {
@@ -206,9 +214,18 @@ export async function PATCH(request: NextRequest) {
         ? displayName.trim()
         : null;
 
-    await getFirebaseAdminAuth().updateUser(uid, {
+    const updatePayload: {
+      displayName: string | null;
+      password?: string;
+    } = {
       displayName: normalizedDisplayName,
-    });
+    };
+
+    if (typeof password === "string" && password.length >= 6) {
+      updatePayload.password = password;
+    }
+
+    await getFirebaseAdminAuth().updateUser(uid, updatePayload);
 
     await userRef.update({
       role,

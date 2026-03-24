@@ -8,7 +8,7 @@ import Input from "@/components/ui/Input";
 import AdminModal from "@/components/admin/AdminModal";
 import AdminGuard from "@/components/admin/AdminGuard";
 import { useAuth, UserRole } from "@/context/AuthContext";
-import { HiPencil, HiTrash, HiPlus } from "react-icons/hi";
+import { HiPencil, HiTrash, HiPlus, HiEye, HiEyeOff } from "react-icons/hi";
 
 const ROLE_OPTIONS: UserRole[] = ["admin", "editor", "blog_manager"];
 
@@ -17,6 +17,117 @@ interface AdminUser {
   email: string;
   displayName: string | null;
   role: UserRole;
+}
+
+interface PasswordFieldProps {
+  label: string;
+  name: string;
+  placeholder?: string;
+  required?: boolean;
+  minLength?: number;
+  helperText?: string;
+  visible: boolean;
+  onToggle: () => void;
+}
+
+function PasswordField({
+  label,
+  name,
+  placeholder,
+  required,
+  minLength,
+  helperText,
+  visible,
+  onToggle,
+}: PasswordFieldProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-[var(--color-text)]">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          name={name}
+          type={visible ? "text" : "password"}
+          placeholder={placeholder}
+          required={required}
+          minLength={minLength}
+          autoComplete="new-password"
+          className="w-full rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 pr-12 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none transition-colors focus:border-[var(--color-primary)]"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[var(--color-text-muted)] transition-colors hover:text-white"
+          aria-label={visible ? "Hide password" : "Show password"}
+        >
+          {visible ? <HiEyeOff className="text-lg" /> : <HiEye className="text-lg" />}
+        </button>
+      </div>
+      {helperText && (
+        <p className="text-xs text-[var(--color-text-muted)]">{helperText}</p>
+      )}
+    </div>
+  );
+}
+
+interface EditablePasswordFieldProps {
+  value: string;
+  editing: boolean;
+  visible: boolean;
+  onChange: (value: string) => void;
+  onToggleVisibility: () => void;
+  onToggleEditing: () => void;
+}
+
+function EditablePasswordField({
+  value,
+  editing,
+  visible,
+  onChange,
+  onToggleVisibility,
+  onToggleEditing,
+}: EditablePasswordFieldProps) {
+  const displayValue = editing ? value : "********";
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-[var(--color-text)]">
+        Password
+      </label>
+      <div className="relative">
+        <input
+          name={editing ? "password" : undefined}
+          type={editing && visible ? "text" : "password"}
+          value={displayValue}
+          onChange={(e) => onChange(e.target.value)}
+          readOnly={!editing}
+          minLength={editing ? 6 : undefined}
+          autoComplete="new-password"
+          className="w-full rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 pr-28 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none transition-colors focus:border-[var(--color-primary)]"
+        />
+        <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
+          {editing && (
+            <button
+              type="button"
+              onClick={onToggleVisibility}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+              aria-label={visible ? "Hide password" : "Show password"}
+            >
+              {visible ? <HiEyeOff className="text-lg" /> : <HiEye className="text-lg" />}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onToggleEditing}
+            className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+          >
+            {editing ? "Cancel" : "Reset"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminUsersPage() {
@@ -30,6 +141,10 @@ export default function AdminUsersPage() {
   const [saving, setSaving] = useState(false);
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showAddPassword, setShowAddPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [editPasswordValue, setEditPasswordValue] = useState("");
 
   const adminCount = useMemo(
     () => users.filter((user) => user.role === "admin").length,
@@ -73,6 +188,9 @@ export default function AdminUsersPage() {
 
   function openEdit(user: AdminUser) {
     setEditing(user);
+    setShowEditPassword(false);
+    setIsEditingPassword(false);
+    setEditPasswordValue("");
     setModalOpen(true);
   }
 
@@ -82,10 +200,12 @@ export default function AdminUsersPage() {
     setSaving(true);
 
     const form = new FormData(e.currentTarget);
+    const submittedRole = form.get("role");
     const payload = {
       uid: editing.id,
       displayName: String(form.get("displayName") || "").trim(),
-      role: form.get("role") as UserRole,
+      role: (submittedRole || editing.role) as UserRole,
+      password: isEditingPassword ? editPasswordValue : "",
     };
 
     try {
@@ -108,6 +228,9 @@ export default function AdminUsersPage() {
       );
       setModalOpen(false);
       setEditing(null);
+      setShowEditPassword(false);
+      setIsEditingPassword(false);
+      setEditPasswordValue("");
     } catch (err) {
       console.error("Save failed:", err);
       alert(err instanceof Error ? err.message : "Failed to update user");
@@ -173,6 +296,7 @@ export default function AdminUsersPage() {
       setUsers((current) => [result.user, ...current]);
       formElement.reset();
       setAddModalOpen(false);
+      setShowAddPassword(false);
     } catch (err) {
       console.error("Create user failed:", err);
       alert(err instanceof Error ? err.message : "Failed to create user");
@@ -197,7 +321,13 @@ export default function AdminUsersPage() {
                   Manage team accounts. This section is only visible to admins.
                 </p>
               </div>
-              <Button onClick={() => setAddModalOpen(true)} className="w-full sm:w-auto">
+              <Button
+                onClick={() => {
+                  setShowAddPassword(false);
+                  setAddModalOpen(true);
+                }}
+                className="w-full sm:w-auto"
+              >
                 <HiPlus className="mr-1.5 inline" /> Add User
               </Button>
             </div>
@@ -368,6 +498,9 @@ export default function AdminUsersPage() {
               onClose={() => {
                 setModalOpen(false);
                 setEditing(null);
+                setShowEditPassword(false);
+                setIsEditingPassword(false);
+                setEditPasswordValue("");
               }}
               title="Edit User"
             >
@@ -408,6 +541,23 @@ export default function AdminUsersPage() {
                       </p>
                     )}
                   </div>
+                  <EditablePasswordField
+                    value={editPasswordValue}
+                    editing={isEditingPassword}
+                    visible={showEditPassword}
+                    onChange={setEditPasswordValue}
+                    onToggleVisibility={() => setShowEditPassword((current) => !current)}
+                    onToggleEditing={() => {
+                      setIsEditingPassword((current) => {
+                        const next = !current;
+                        if (!next) {
+                          setEditPasswordValue("");
+                          setShowEditPassword(false);
+                        }
+                        return next;
+                      });
+                    }}
+                  />
                   <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
                     <Button
                       type="button"
@@ -415,6 +565,9 @@ export default function AdminUsersPage() {
                       onClick={() => {
                         setModalOpen(false);
                         setEditing(null);
+                        setShowEditPassword(false);
+                        setIsEditingPassword(false);
+                        setEditPasswordValue("");
                       }}
                     >
                       Cancel
@@ -429,7 +582,10 @@ export default function AdminUsersPage() {
 
             <AdminModal
               open={addModalOpen}
-              onClose={() => setAddModalOpen(false)}
+              onClose={() => {
+                setAddModalOpen(false);
+                setShowAddPassword(false);
+              }}
               title="Add User"
             >
               <form onSubmit={handleAdd} className="space-y-4">
@@ -445,13 +601,14 @@ export default function AdminUsersPage() {
                   placeholder="name@devoria.dev"
                   required
                 />
-                <Input
+                <PasswordField
                   label="Password"
                   name="password"
-                  type="password"
                   placeholder="Minimum 6 characters"
                   minLength={6}
                   required
+                  visible={showAddPassword}
+                  onToggle={() => setShowAddPassword((current) => !current)}
                 />
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-[var(--color-text)]">
@@ -473,7 +630,10 @@ export default function AdminUsersPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => setAddModalOpen(false)}
+                    onClick={() => {
+                      setAddModalOpen(false);
+                      setShowAddPassword(false);
+                    }}
                   >
                     Cancel
                   </Button>
