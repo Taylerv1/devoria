@@ -135,14 +135,14 @@ export default function AdminProjectsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Projects</h1>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">
             Manage your portfolio projects.
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="w-full sm:w-auto">
           <HiPlus /> Add Project
         </Button>
       </div>
@@ -155,7 +155,52 @@ export default function AdminProjectsPage() {
         </Card>
       ) : (
         <Card hover={false}>
-          <div className="overflow-x-auto">
+          <div className="space-y-3 sm:hidden">
+            {projects.map((project) => (
+              <div key={project.id} className="rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] p-4">
+                <div className="flex items-start gap-3">
+                  {project.coverImage && (
+                    <img
+                      src={project.coverImage}
+                      alt=""
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-white">{project.title}</p>
+                    <p className="truncate text-xs text-[var(--color-text-muted)]">/{project.slug}</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <p className="text-[var(--color-text-muted)]">Category</p>
+                  <p className="text-right text-[var(--color-text)]">{project.category}</p>
+                  <p className="text-[var(--color-text-muted)]">Featured</p>
+                  <p className="text-right text-[var(--color-text)]">{project.featured ? "Yes" : "No"}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <Badge variant={project.status === "published" ? "accent" : "muted"}>
+                    {project.status}
+                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEdit(project)}
+                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                    >
+                      <HiPencil />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(project)}
+                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    >
+                      <HiTrash />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-dark-border)]">
@@ -227,7 +272,7 @@ export default function AdminProjectsPage() {
           <Textarea label="Description" name="description" required defaultValue={editing?.description ?? ""} />
           <Textarea label="Content" name="content" required defaultValue={editing?.content ?? ""} />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-[var(--color-text)]">Category</label>
               <select
@@ -256,7 +301,7 @@ export default function AdminProjectsPage() {
           <Input label="Tags (comma-separated)" name="tags" defaultValue={editing?.tags?.join(", ") ?? ""} />
           <Input label="Tech Stack (comma-separated)" name="techStack" defaultValue={editing?.techStack?.join(", ") ?? ""} />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input label="Live URL" name="liveUrl" type="url" defaultValue={editing?.liveUrl ?? ""} />
             <Input label="GitHub URL" name="githubUrl" type="url" defaultValue={editing?.githubUrl ?? ""} />
           </div>
@@ -289,7 +334,7 @@ export default function AdminProjectsPage() {
             multiple
           />
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : editing ? "Update" : "Create"}

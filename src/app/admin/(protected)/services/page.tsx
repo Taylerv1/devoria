@@ -107,14 +107,14 @@ export default function AdminServicesPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Services</h1>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">
             Manage your service offerings.
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="w-full sm:w-auto">
           <HiPlus /> Add Service
         </Button>
       </div>
@@ -127,7 +127,38 @@ export default function AdminServicesPage() {
         </Card>
       ) : (
         <Card hover={false}>
-          <div className="overflow-x-auto">
+          <div className="space-y-3 sm:hidden">
+            {services.map((service) => (
+              <div key={service.id} className="rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] p-4">
+                <p className="font-medium text-white">{service.title}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <p className="text-[var(--color-text-muted)]">Order</p>
+                  <p className="text-right text-[var(--color-text)]">#{service.order}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <Badge variant={service.status === "active" ? "accent" : "muted"}>
+                    {service.status}
+                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEdit(service)}
+                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                    >
+                      <HiPencil />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(service)}
+                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    >
+                      <HiTrash />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-dark-border)]">
@@ -179,7 +210,7 @@ export default function AdminServicesPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Title" name="title" required defaultValue={editing?.title ?? ""} />
           <Textarea label="Description" name="description" required defaultValue={editing?.description ?? ""} />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-[var(--color-text)]">Icon</label>
               <select
@@ -206,7 +237,7 @@ export default function AdminServicesPage() {
               <option value="inactive">Inactive</option>
             </select>
           </div>
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : editing ? "Update" : "Create"}

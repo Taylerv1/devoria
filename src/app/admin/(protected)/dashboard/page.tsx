@@ -123,7 +123,7 @@ function DashboardContent() {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
           Welcome back! Here&apos;s an overview of your content.
@@ -157,10 +157,10 @@ function DashboardContent() {
       </div>
 
       <div className="mt-8 lg:mt-10">
-        <h2 className="mb-4 text-lg font-semibold text-white">
+        <h2 className="mb-4 flex flex-wrap items-center gap-1 text-lg font-semibold text-white">
           Recent Messages
           {unreadCount > 0 && (
-            <span className="ml-2 text-sm font-normal text-[var(--color-primary-light)]">
+            <span className="text-sm font-normal text-[var(--color-primary-light)] sm:ml-2">
               ({unreadCount} unread)
             </span>
           )}
@@ -179,7 +179,7 @@ function DashboardContent() {
               {recentMessages.slice(0, 5).map((message) => (
                 <div
                   key={message.id}
-                  className="flex items-center justify-between border-b border-[var(--color-dark-border)] pb-4 last:border-0 last:pb-0"
+                  className="flex flex-col gap-2 border-b border-[var(--color-dark-border)] pb-4 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-3">
                     {!message.read && (
@@ -196,7 +196,7 @@ function DashboardContent() {
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs text-[var(--color-text-muted)]">
+                  <span className="pl-5 text-xs text-[var(--color-text-muted)] sm:pl-0">
                     {message.createdAt ? formatDate(message.createdAt) : "-"}
                   </span>
                 </div>

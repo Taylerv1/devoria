@@ -190,14 +190,14 @@ export default function AdminUsersPage() {
           </div>
         ) : (
           <>
-            <div className="mb-8 flex items-center justify-between">
+            <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-white">Users</h1>
                 <p className="mt-1 text-sm text-[var(--color-text-muted)]">
                   Manage team accounts. This section is only visible to admins.
                 </p>
               </div>
-              <Button onClick={() => setAddModalOpen(true)}>
+              <Button onClick={() => setAddModalOpen(true)} className="w-full sm:w-auto">
                 <HiPlus className="mr-1.5 inline" /> Add User
               </Button>
             </div>
@@ -216,7 +216,64 @@ export default function AdminUsersPage() {
               </Card>
             ) : (
               <Card hover={false}>
-                <div className="overflow-x-auto">
+                <div className="space-y-3 sm:hidden">
+                  {users.map((user) => {
+                    const isCurrentAdmin = user.id === profile?.uid;
+
+                    return (
+                      <div key={user.id} className="rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-xs font-bold text-[var(--color-primary-light)]">
+                            {(user.displayName || user.email || "?")
+                              .split(" ")
+                              .map((part) => part[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-white">{user.displayName || user.email}</p>
+                            <p className="truncate text-xs text-[var(--color-text-muted)]">{user.email}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between">
+                          <Badge variant={user.role === "admin" ? "primary" : "muted"}>
+                            {user.role}
+                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openEdit(user)}
+                              className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                            >
+                              <HiPencil />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user)}
+                              disabled={isCurrentAdmin || deletingId === user.id}
+                              title={
+                                isCurrentAdmin
+                                  ? "You cannot delete your own admin account."
+                                  : undefined
+                              }
+                              className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <HiTrash />
+                            </button>
+                          </div>
+                        </div>
+
+                        {isCurrentAdmin && (
+                          <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                            Current admin account
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="hidden sm:block">
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-[var(--color-dark-border)]">
@@ -351,7 +408,7 @@ export default function AdminUsersPage() {
                       </p>
                     )}
                   </div>
-                  <div className="flex justify-end gap-3 pt-2">
+                  <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
                     <Button
                       type="button"
                       variant="ghost"
@@ -412,7 +469,7 @@ export default function AdminUsersPage() {
                     ))}
                   </select>
                 </div>
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
                   <Button
                     type="button"
                     variant="ghost"

@@ -59,7 +59,7 @@ export default function AdminMessagesPage() {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl font-bold text-white">Messages</h1>
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
           Contact and project inquiry submissions from your website.
@@ -79,7 +79,47 @@ export default function AdminMessagesPage() {
         </Card>
       ) : (
         <Card hover={false}>
-          <div className="overflow-x-auto">
+          <div className="space-y-3 sm:hidden">
+            {messages.map((msg) => (
+              <div key={msg.id} className="rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className={`${msg.read ? "text-[var(--color-text)]" : "font-medium text-white"}`}>
+                      {msg.subject}
+                    </p>
+                    <p className="truncate text-xs text-[var(--color-text-muted)]">{msg.email}</p>
+                  </div>
+                  <Badge variant={msg.read ? "muted" : "primary"}>
+                    {msg.read ? "read" : "new"}
+                  </Badge>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <p className="text-[var(--color-text-muted)]">From</p>
+                  <p className="truncate text-right text-[var(--color-text)]">{msg.name}</p>
+                  <p className="text-[var(--color-text-muted)]">Date</p>
+                  <p className="text-right text-[var(--color-text)]">
+                    {msg.createdAt ? formatDate(msg.createdAt) : "—"}
+                  </p>
+                </div>
+                <div className="mt-3 flex justify-end gap-2">
+                  <button
+                    onClick={() => handleView(msg)}
+                    className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    <HiEye />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(msg)}
+                    className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                  >
+                    <HiTrash />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-dark-border)]">
@@ -140,7 +180,7 @@ export default function AdminMessagesPage() {
       >
         {viewing && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs text-[var(--color-text-muted)]">From</p>
                 <p className="text-sm font-medium text-white">{viewing.name}</p>

@@ -107,14 +107,14 @@ export default function AdminNewsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">News</h1>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">
             Manage company news and announcements.
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="w-full sm:w-auto">
           <HiPlus /> Add News
         </Button>
       </div>
@@ -127,7 +127,41 @@ export default function AdminNewsPage() {
         </Card>
       ) : (
         <Card hover={false}>
-          <div className="overflow-x-auto">
+          <div className="space-y-3 sm:hidden">
+            {news.map((item) => (
+              <div key={item.id} className="rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] p-4">
+                <p className="font-medium text-white">{item.title}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">/{item.slug}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <p className="text-[var(--color-text-muted)]">Date</p>
+                  <p className="text-right text-[var(--color-text)]">
+                    {item.createdAt ? formatDate(item.createdAt) : "—"}
+                  </p>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <Badge variant={item.status === "published" ? "accent" : "muted"}>
+                    {item.status}
+                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEdit(item)}
+                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                    >
+                      <HiPencil />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item)}
+                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    >
+                      <HiTrash />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-dark-border)]">
@@ -207,7 +241,7 @@ export default function AdminNewsPage() {
             folder="news"
           />
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : editing ? "Update" : "Create"}
