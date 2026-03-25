@@ -28,7 +28,7 @@ const CONTENT: Record<
 > = {
   missing: {
     badge: "Not Found",
-    title: "This page doesn&apos;t exist",
+    title: "This page doesn't exist",
     description:
       "The admin page you tried to open could not be found. It may have been moved, removed, or the URL may be incorrect.",
     sideText:
@@ -37,9 +37,9 @@ const CONTENT: Record<
   },
   unauthorized: {
     badge: "Access Restricted",
-    title: "You don&apos;t have access to this page",
+    title: "You don't have access to this page",
     description:
-      "This admin page exists, but it isn&apos;t available for your current role. We blocked it before loading its protected data.",
+      "This admin page exists, but it isn't available for your current role. We blocked it before loading its protected data.",
     sideText:
       "Your session is still active. You can jump back to the part of the panel that belongs to your role.",
     Icon: HiShieldExclamation,
