@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "create-admin": "node scripts/create-admin.js",
-    "seed": "node scripts/seed-demo-data.js"
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
