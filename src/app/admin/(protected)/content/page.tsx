@@ -30,7 +30,7 @@ import {
   normalizeContactPageContent,
   normalizeHomePageContent,
 } from "@/lib/site-content";
-import { HiCheck, HiChevronDown, HiChevronUp, HiPlus, HiTrash } from "react-icons/hi";
+import { HiCheck, HiChevronDown, HiChevronUp, HiPlus, HiTrash, HiLockClosed } from "react-icons/hi";
 
 type NoticeState =
   | {
@@ -87,6 +87,7 @@ function ArrayItemCard({
   onMoveDown,
   onRemove,
   children,
+  readOnly,
 }: {
   title: string;
   index: number;
@@ -95,6 +96,7 @@ function ArrayItemCard({
   onMoveDown: () => void;
   onRemove: () => void;
   children: ReactNode;
+  readOnly?: boolean;
 }) {
   return (
     <div className="rounded-2xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] p-4">
@@ -107,34 +109,36 @@ function ArrayItemCard({
             Position {index + 1} of {count}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onMoveUp}
-            disabled={index === 0}
-            className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-dark-border)] px-3 py-2 text-xs text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <HiChevronUp />
-            Up
-          </button>
-          <button
-            type="button"
-            onClick={onMoveDown}
-            disabled={index === count - 1}
-            className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-dark-border)] px-3 py-2 text-xs text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <HiChevronDown />
-            Down
-          </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200"
-          >
-            <HiTrash />
-            Remove
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={index === 0}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-dark-border)] px-3 py-2 text-xs text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <HiChevronUp />
+              Up
+            </button>
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={index === count - 1}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-dark-border)] px-3 py-2 text-xs text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <HiChevronDown />
+              Down
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200"
+            >
+              <HiTrash />
+              Remove
+            </button>
+          </div>
+        )}
       </div>
       <div className="space-y-4">{children}</div>
     </div>
@@ -146,11 +150,13 @@ function SelectField({
   value,
   onChange,
   options,
+  disabled,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: readonly string[];
+  disabled?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -160,7 +166,8 @@ function SelectField({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none focus:border-[var(--color-primary)]"
+        disabled={disabled}
+        className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none focus:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -433,6 +440,7 @@ function AdminContentManager() {
                   hero: { ...current.hero, badge: event.target.value },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <div className="grid gap-4 lg:grid-cols-3">
               <Input
@@ -444,6 +452,7 @@ function AdminContentManager() {
                     hero: { ...current.hero, titleStart: event.target.value },
                   }))
                 }
+                readOnly={!canUpdate}
               />
               <Input
                 label="Highlighted Title"
@@ -457,6 +466,7 @@ function AdminContentManager() {
                     },
                   }))
                 }
+                readOnly={!canUpdate}
               />
               <Input
                 label="Title End"
@@ -467,6 +477,7 @@ function AdminContentManager() {
                     hero: { ...current.hero, titleEnd: event.target.value },
                   }))
                 }
+                readOnly={!canUpdate}
               />
             </div>
             <Textarea
@@ -478,6 +489,7 @@ function AdminContentManager() {
                   hero: { ...current.hero, description: event.target.value },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="space-y-4 rounded-2xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] p-4">
@@ -493,6 +505,7 @@ function AdminContentManager() {
                       },
                     }))
                   }
+                  readOnly={!canUpdate}
                 />
                 <Input
                   label="Primary Button Link"
@@ -506,6 +519,7 @@ function AdminContentManager() {
                       },
                     }))
                   }
+                  readOnly={!canUpdate}
                 />
               </div>
               <div className="space-y-4 rounded-2xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] p-4">
@@ -521,6 +535,7 @@ function AdminContentManager() {
                       },
                     }))
                   }
+                  readOnly={!canUpdate}
                 />
                 <Input
                   label="Secondary Button Link"
@@ -534,6 +549,7 @@ function AdminContentManager() {
                       },
                     }))
                   }
+                  readOnly={!canUpdate}
                 />
               </div>
             </div>
@@ -543,21 +559,23 @@ function AdminContentManager() {
             title="Stats"
             description="Add, remove, and reorder the stats shown below the hero."
           >
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                size="sm"
-                onClick={() =>
-                  setHomeContent((current) => ({
-                    ...current,
-                    stats: [...current.stats, { ...EMPTY_HOME_STAT }],
-                  }))
-                }
-              >
-                <HiPlus />
-                Add Stat
-              </Button>
-            </div>
+            {canUpdate && (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() =>
+                    setHomeContent((current) => ({
+                      ...current,
+                      stats: [...current.stats, { ...EMPTY_HOME_STAT }],
+                    }))
+                  }
+                >
+                  <HiPlus />
+                  Add Stat
+                </Button>
+              </div>
+            )}
 
             <div className="space-y-4">
               {homeContent.stats.length === 0 ? (
@@ -591,6 +609,7 @@ function AdminContentManager() {
                         ),
                       }))
                     }
+                    readOnly={!canUpdate}
                   >
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Input
@@ -599,6 +618,7 @@ function AdminContentManager() {
                         onChange={(event) =>
                           updateHomeStat(index, "value", event.target.value)
                         }
+                        readOnly={!canUpdate}
                       />
                       <Input
                         label="Label"
@@ -606,6 +626,7 @@ function AdminContentManager() {
                         onChange={(event) =>
                           updateHomeStat(index, "label", event.target.value)
                         }
+                        readOnly={!canUpdate}
                       />
                     </div>
                   </ArrayItemCard>
@@ -631,6 +652,7 @@ function AdminContentManager() {
                     },
                   }))
                 }
+                readOnly={!canUpdate}
               />
               <Input
                 label="Button Label"
@@ -644,6 +666,7 @@ function AdminContentManager() {
                     },
                   }))
                 }
+                readOnly={!canUpdate}
               />
             </div>
             <Input
@@ -655,6 +678,7 @@ function AdminContentManager() {
                   services: { ...current.services, title: event.target.value },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <Textarea
               label="Section Description"
@@ -668,6 +692,7 @@ function AdminContentManager() {
                   },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <Input
               label="Button Link"
@@ -701,6 +726,7 @@ function AdminContentManager() {
                     },
                   }))
                 }
+                readOnly={!canUpdate}
               />
               <Input
                 label="Button Label"
@@ -714,6 +740,7 @@ function AdminContentManager() {
                     },
                   }))
                 }
+                readOnly={!canUpdate}
               />
             </div>
             <Input
@@ -725,6 +752,7 @@ function AdminContentManager() {
                   projects: { ...current.projects, title: event.target.value },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <Textarea
               label="Section Description"
@@ -738,6 +766,7 @@ function AdminContentManager() {
                   },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <Input
               label="Button Link"
@@ -751,6 +780,7 @@ function AdminContentManager() {
                   },
                 }))
               }
+              readOnly={!canUpdate}
             />
           </SectionBlock>
 
@@ -767,6 +797,7 @@ function AdminContentManager() {
                   cta: { ...current.cta, title: event.target.value },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <Textarea
               label="CTA Description"
@@ -777,6 +808,7 @@ function AdminContentManager() {
                   cta: { ...current.cta, description: event.target.value },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
@@ -788,6 +820,7 @@ function AdminContentManager() {
                     cta: { ...current.cta, buttonLabel: event.target.value },
                   }))
                 }
+                readOnly={!canUpdate}
               />
               <Input
                 label="CTA Button Link"
@@ -798,6 +831,7 @@ function AdminContentManager() {
                     cta: { ...current.cta, buttonHref: event.target.value },
                   }))
                 }
+                readOnly={!canUpdate}
               />
             </div>
           </SectionBlock>
@@ -836,6 +870,7 @@ function AdminContentManager() {
                   header: { ...current.header, title: event.target.value },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <Textarea
               label="Description"
@@ -849,6 +884,7 @@ function AdminContentManager() {
                   },
                 }))
               }
+              readOnly={!canUpdate}
             />
           </SectionBlock>
 
@@ -865,6 +901,7 @@ function AdminContentManager() {
                   story: { ...current.story, title: event.target.value },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <Textarea
               label="Story Body"
@@ -876,6 +913,7 @@ function AdminContentManager() {
                 }))
               }
               className="min-h-[180px]"
+              readOnly={!canUpdate}
             />
           </SectionBlock>
 
@@ -893,22 +931,25 @@ function AdminContentManager() {
                     valuesTitle: event.target.value,
                   }))
                 }
+                readOnly={!canUpdate}
               />
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() =>
-                    setAboutContent((current) => ({
-                      ...current,
-                      values: [...current.values, { ...EMPTY_ABOUT_VALUE }],
-                    }))
-                  }
-                >
-                  <HiPlus />
-                  Add Value
-                </Button>
-              </div>
+              {canUpdate && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() =>
+                      setAboutContent((current) => ({
+                        ...current,
+                        values: [...current.values, { ...EMPTY_ABOUT_VALUE }],
+                      }))
+                    }
+                  >
+                    <HiPlus />
+                    Add Value
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -943,12 +984,14 @@ function AdminContentManager() {
                         ),
                       }))
                     }
+                    readOnly={!canUpdate}
                   >
                     <SelectField
                       label="Icon"
                       value={valueItem.icon}
                       onChange={(value) => updateAboutValue(index, "icon", value)}
                       options={ABOUT_VALUE_ICON_OPTIONS}
+                      disabled={!canUpdate}
                     />
                     <Input
                       label="Title"
@@ -956,6 +999,7 @@ function AdminContentManager() {
                       onChange={(event) =>
                         updateAboutValue(index, "title", event.target.value)
                       }
+                      readOnly={!canUpdate}
                     />
                     <Textarea
                       label="Description"
@@ -967,6 +1011,7 @@ function AdminContentManager() {
                           event.target.value
                         )
                       }
+                      readOnly={!canUpdate}
                     />
                   </ArrayItemCard>
                 ))
@@ -988,25 +1033,28 @@ function AdminContentManager() {
                     teamTitle: event.target.value,
                   }))
                 }
+                readOnly={!canUpdate}
               />
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() =>
-                    setAboutContent((current) => ({
-                      ...current,
-                      teamMembers: [
-                        ...current.teamMembers,
-                        { ...EMPTY_TEAM_MEMBER },
-                      ],
-                    }))
-                  }
-                >
-                  <HiPlus />
-                  Add Team Member
-                </Button>
-              </div>
+              {canUpdate && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() =>
+                      setAboutContent((current) => ({
+                        ...current,
+                        teamMembers: [
+                          ...current.teamMembers,
+                          { ...EMPTY_TEAM_MEMBER },
+                        ],
+                      }))
+                    }
+                  >
+                    <HiPlus />
+                    Add Team Member
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -1041,6 +1089,7 @@ function AdminContentManager() {
                         ),
                       }))
                     }
+                    readOnly={!canUpdate}
                   >
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Input
@@ -1049,6 +1098,7 @@ function AdminContentManager() {
                         onChange={(event) =>
                           updateTeamMember(index, "name", event.target.value)
                         }
+                        readOnly={!canUpdate}
                       />
                       <Input
                         label="Role"
@@ -1056,6 +1106,7 @@ function AdminContentManager() {
                         onChange={(event) =>
                           updateTeamMember(index, "role", event.target.value)
                         }
+                        readOnly={!canUpdate}
                       />
                     </div>
                     <ImageUpload
@@ -1065,6 +1116,7 @@ function AdminContentManager() {
                         updateTeamMember(index, "image", String(url))
                       }
                       folder="team"
+                      disabled={!canUpdate}
                     />
                   </ArrayItemCard>
                 ))
@@ -1106,6 +1158,7 @@ function AdminContentManager() {
                   header: { ...current.header, title: event.target.value },
                 }))
               }
+              readOnly={!canUpdate}
             />
             <Textarea
               label="Description"
@@ -1119,6 +1172,7 @@ function AdminContentManager() {
                   },
                 }))
               }
+              readOnly={!canUpdate}
             />
           </SectionBlock>
 
@@ -1135,6 +1189,7 @@ function AdminContentManager() {
                   footerTitle: event.target.value,
                 }))
               }
+              readOnly={!canUpdate}
             />
 
             <div className="grid gap-4 lg:grid-cols-3">
@@ -1145,6 +1200,7 @@ function AdminContentManager() {
                   onChange={(event) =>
                     updateContactField("email", "label", event.target.value)
                   }
+                  readOnly={!canUpdate}
                 />
                 <Input
                   label="Email Value"
@@ -1152,6 +1208,7 @@ function AdminContentManager() {
                   onChange={(event) =>
                     updateContactField("email", "value", event.target.value)
                   }
+                  readOnly={!canUpdate}
                 />
               </div>
 
@@ -1162,6 +1219,7 @@ function AdminContentManager() {
                   onChange={(event) =>
                     updateContactField("phone", "label", event.target.value)
                   }
+                  readOnly={!canUpdate}
                 />
                 <Input
                   label="Phone Value"
@@ -1169,6 +1227,7 @@ function AdminContentManager() {
                   onChange={(event) =>
                     updateContactField("phone", "value", event.target.value)
                   }
+                  readOnly={!canUpdate}
                 />
               </div>
 
@@ -1179,6 +1238,7 @@ function AdminContentManager() {
                   onChange={(event) =>
                     updateContactField("location", "label", event.target.value)
                   }
+                  readOnly={!canUpdate}
                 />
                 <Input
                   label="Location Value"
@@ -1186,6 +1246,7 @@ function AdminContentManager() {
                   onChange={(event) =>
                     updateContactField("location", "value", event.target.value)
                   }
+                  readOnly={!canUpdate}
                 />
               </div>
             </div>

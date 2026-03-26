@@ -10,6 +10,7 @@ export default function Input({
   label,
   error,
   className,
+  readOnly,
   ...props
 }: InputProps) {
   return (
@@ -23,8 +24,10 @@ export default function Input({
         className={cn(
           "rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none transition-colors focus:border-[var(--color-primary)]",
           error && "border-red-500",
+          readOnly && "cursor-not-allowed bg-[var(--color-dark)] opacity-70",
           className
         )}
+        readOnly={readOnly}
         {...props}
       />
       {error && <span className="text-xs text-red-400">{error}</span>}

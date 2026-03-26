@@ -9,6 +9,7 @@ interface ImageUploadProps {
   folder: string;
   multiple?: boolean;
   label?: string;
+  disabled?: boolean;
 }
 
 export default function ImageUpload({
@@ -17,6 +18,7 @@ export default function ImageUpload({
   folder,
   multiple = false,
   label,
+  disabled = false,
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -91,37 +93,41 @@ export default function ImageUpload({
           {urls.map((url, i) => (
             <div key={i} className="group relative h-20 w-20 overflow-hidden rounded-lg border border-[var(--color-dark-border)]">
               <img src={url} alt="" className="h-full w-full object-cover" />
-              <button
-                type="button"
-                onClick={() => removeImage(i)}
-                className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100"
-              >
-                <HiX className="text-white text-lg" />
-              </button>
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => removeImage(i)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <HiX className="text-white text-lg" />
+                </button>
+              )}
             </div>
           ))}
         </div>
       )}
 
       {/* Upload area */}
-      <button
-        type="button"
-        disabled={uploading}
-        onClick={() => inputRef.current?.click()}
-        className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--color-dark-border)] bg-[var(--color-dark)] px-4 py-6 text-sm text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-white disabled:opacity-50"
-      >
-        {uploading ? (
-          <>
-            <HiCloudUpload className="animate-bounce text-lg" />
-            Uploading...
-          </>
-        ) : (
-          <>
-            <HiPhotograph className="text-lg" />
-            {multiple ? "Add Images" : "Upload Image"}
-          </>
-        )}
-      </button>
+      {!disabled && (
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+          className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--color-dark-border)] bg-[var(--color-dark)] px-4 py-6 text-sm text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-white disabled:opacity-50"
+        >
+          {uploading ? (
+            <>
+              <HiCloudUpload className="animate-bounce text-lg" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <HiPhotograph className="text-lg" />
+              {multiple ? "Add Images" : "Upload Image"}
+            </>
+          )}
+        </button>
+      )}
 
       <input
         ref={inputRef}
@@ -134,9 +140,11 @@ export default function ImageUpload({
 
       {error && <p className="text-xs text-red-400">{error}</p>}
 
-      <p className="text-xs text-[var(--color-text-muted)]">
-        Images are uploaded automatically and only the returned URL is stored in Firestore.
-      </p>
+      {!disabled && (
+        <p className="text-xs text-[var(--color-text-muted)]">
+          Images are uploaded automatically and only the returned URL is stored in Firestore.
+        </p>
+      )}
     </div>
   );
 }
