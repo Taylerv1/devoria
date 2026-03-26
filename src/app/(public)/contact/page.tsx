@@ -1,79 +1,43 @@
-"use client";
-
-import { useState, FormEvent } from "react";
 import Section from "@/components/layout/Section";
 import PageHeader from "@/components/layout/PageHeader";
 import Card from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
-import Textarea from "@/components/ui/Textarea";
-import Button from "@/components/ui/Button";
+import ContactForm from "@/components/contact/ContactForm";
+import { getContactPageContent } from "@/lib/site-content.server";
 import { HiMail, HiLocationMarker, HiPhone } from "react-icons/hi";
 
-const contactInfo = [
-  {
-    icon: <HiMail className="text-xl" />,
-    label: "Email",
-    value: "devoriateam@gmail.com",
-  },
-  {
-    icon: <HiPhone className="text-xl" />,
-    label: "Phone",
-    value: "+961 65544257",
-  },
-  {
-    icon: <HiLocationMarker className="text-xl" />,
-    label: "Location",
-    value: "Lebanon, Saida",
-  },
-];
-
-export default function ContactPage() {
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSending(true);
-
-    const formElement = e.currentTarget;
-    const form = new FormData(formElement);
-    try {
-      const response = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          source: "contact",
-          name: form.get("name"),
-          email: form.get("email"),
-          subject: form.get("subject"),
-          message: form.get("message"),
-        }),
-      });
-
-      const result = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to send message.");
-      }
-
-      formElement.reset();
-      setSent(true);
-    } catch {
-      alert("Failed to send message. Please try again.");
-    } finally {
-      setSending(false);
-    }
-  }
+export default async function ContactPage() {
+  const content = await getContactPageContent();
+  const contactInfo = [
+    {
+      icon: <HiMail className="text-xl" />,
+      label: content.email.label,
+      value: content.email.value,
+      href: content.email.value ? `mailto:${content.email.value}` : "",
+    },
+    {
+      icon: <HiPhone className="text-xl" />,
+      label: content.phone.label,
+      value: content.phone.value,
+      href: content.phone.value
+        ? `tel:${content.phone.value.replace(/\s+/g, "")}`
+        : "",
+    },
+    {
+      icon: <HiLocationMarker className="text-xl" />,
+      label: content.location.label,
+      value: content.location.value,
+      href: "",
+    },
+  ];
 
   return (
     <Section>
       <PageHeader
-        title="Contact Us"
-        description="Have a project in mind? Let's talk about how we can help bring your vision to life."
+        title={content.header.title}
+        description={content.header.description}
       />
 
       <div className="grid gap-8 lg:grid-cols-3 lg:gap-12">
-        {/* Contact info */}
         <div className="space-y-4 sm:space-y-6">
           {contactInfo.map((info) => (
             <Card key={info.label} hover={false}>
@@ -85,63 +49,24 @@ export default function ContactPage() {
                   <p className="text-sm text-[var(--color-text-muted)]">
                     {info.label}
                   </p>
-                  <p className="font-medium text-white">{info.value}</p>
+                  {info.href ? (
+                    <a
+                      href={info.href}
+                      className="font-medium text-white transition-colors hover:text-[var(--color-primary-light)]"
+                    >
+                      {info.value}
+                    </a>
+                  ) : (
+                    <p className="font-medium text-white">{info.value}</p>
+                  )}
                 </div>
               </div>
             </Card>
           ))}
         </div>
 
-        {/* Form */}
         <div className="lg:col-span-2">
-          <Card hover={false} className="p-5 sm:p-7 lg:p-8">
-            {sent ? (
-              <div className="py-12 text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-accent)]/10 text-3xl text-[var(--color-accent)]">
-                  ✓
-                </div>
-                <h3 className="text-xl font-semibold text-white">
-                  Message Sent!
-                </h3>
-                <p className="mt-2 text-[var(--color-text-muted)]">
-                  We&apos;ll get back to you within 24 hours.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Input
-                    label="Name"
-                    name="name"
-                    placeholder="Ali Hassan"
-                    required
-                  />
-                  <Input
-                    label="Email"
-                    name="email"
-                    type="email"
-                    placeholder="ali@example.com"
-                    required
-                  />
-                </div>
-                <Input
-                  label="Subject"
-                  name="subject"
-                  placeholder="Project inquiry"
-                  required
-                />
-                <Textarea
-                  label="Message"
-                  name="message"
-                  placeholder="Tell us about your project..."
-                  required
-                />
-                <Button type="submit" size="lg" disabled={sending}>
-                  {sending ? "Sending..." : "Send Message"}
-                </Button>
-              </form>
-            )}
-          </Card>
+          <ContactForm />
         </div>
       </div>
     </Section>

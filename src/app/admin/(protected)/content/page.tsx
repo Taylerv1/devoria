@@ -18,12 +18,16 @@ import {
   SITE_CONTENT_DOCS,
   AboutPageContent,
   AboutValueItem,
+  ContactInfoField,
+  ContactPageContent,
   HomePageContent,
   HomeStat,
   TeamMember,
   createDefaultAboutPageContent,
+  createDefaultContactPageContent,
   createDefaultHomePageContent,
   normalizeAboutPageContent,
+  normalizeContactPageContent,
   normalizeHomePageContent,
 } from "@/lib/site-content";
 import { HiCheck, HiChevronDown, HiChevronUp, HiPlus, HiTrash } from "react-icons/hi";
@@ -186,19 +190,24 @@ function AdminContentManager() {
   const [aboutContent, setAboutContent] = useState<AboutPageContent>(
     createDefaultAboutPageContent()
   );
+  const [contactContent, setContactContent] = useState<ContactPageContent>(
+    createDefaultContactPageContent()
+  );
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<NoticeState>(null);
   const [savingHome, setSavingHome] = useState(false);
   const [savingAbout, setSavingAbout] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
 
   useEffect(() => {
     let active = true;
 
     async function loadPageContent() {
       try {
-        const [homeDoc, aboutDoc] = await Promise.all([
+        const [homeDoc, aboutDoc, contactDoc] = await Promise.all([
           getDocument(SITE_CONTENT_COLLECTION, SITE_CONTENT_DOCS.home),
           getDocument(SITE_CONTENT_COLLECTION, SITE_CONTENT_DOCS.about),
+          getDocument(SITE_CONTENT_COLLECTION, SITE_CONTENT_DOCS.contact),
         ]);
 
         if (!active) {
@@ -207,6 +216,7 @@ function AdminContentManager() {
 
         setHomeContent(normalizeHomePageContent(homeDoc));
         setAboutContent(normalizeAboutPageContent(aboutDoc));
+        setContactContent(normalizeContactPageContent(contactDoc));
       } catch (error) {
         console.error("[admin-content] Failed to load managed pages:", error);
 
@@ -216,6 +226,7 @@ function AdminContentManager() {
 
         setHomeContent(createDefaultHomePageContent());
         setAboutContent(createDefaultAboutPageContent());
+        setContactContent(createDefaultContactPageContent());
         setNotice({
           tone: "error",
           message:
@@ -270,6 +281,20 @@ function AdminContentManager() {
     }));
   }
 
+  function updateContactField(
+    field: "email" | "phone" | "location",
+    property: keyof ContactInfoField,
+    value: string
+  ) {
+    setContactContent((current) => ({
+      ...current,
+      [field]: {
+        ...current[field],
+        [property]: value,
+      },
+    }));
+  }
+
   async function handleHomeSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSavingHome(true);
@@ -319,6 +344,32 @@ function AdminContentManager() {
       });
     } finally {
       setSavingAbout(false);
+    }
+  }
+
+  async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSavingContact(true);
+    setNotice(null);
+
+    try {
+      await setDocument(
+        SITE_CONTENT_COLLECTION,
+        SITE_CONTENT_DOCS.contact,
+        contactContent
+      );
+      setNotice({
+        tone: "success",
+        message: "Contact and footer content saved successfully.",
+      });
+    } catch (error) {
+      console.error("[admin-content] Failed to save contact content:", error);
+      setNotice({
+        tone: "error",
+        message: "Failed to save contact and footer content. Please try again.",
+      });
+    } finally {
+      setSavingContact(false);
     }
   }
 
@@ -1016,6 +1067,125 @@ function AdminContentManager() {
                   </ArrayItemCard>
                 ))
               )}
+            </div>
+          </SectionBlock>
+        </Card>
+      </form>
+
+      <form onSubmit={handleContactSubmit}>
+        <Card hover={false} className="space-y-5">
+          <div className="flex flex-col gap-3 border-b border-[var(--color-dark-border)] pb-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.28em] text-[var(--color-primary-light)]">
+                Contact
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-white">
+                Contact + Footer Content
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                Shared contact details used in the Contact page cards and footer.
+              </p>
+            </div>
+            <Button type="submit" disabled={savingContact}>
+              {savingContact ? "Saving..." : "Save Contact Content"}
+            </Button>
+          </div>
+
+          <SectionBlock
+            title="Contact Page Header"
+            description="Controls the title and intro text shown at the top of the Contact page."
+          >
+            <Input
+              label="Title"
+              value={contactContent.header.title}
+              onChange={(event) =>
+                setContactContent((current) => ({
+                  ...current,
+                  header: { ...current.header, title: event.target.value },
+                }))
+              }
+            />
+            <Textarea
+              label="Description"
+              value={contactContent.header.description}
+              onChange={(event) =>
+                setContactContent((current) => ({
+                  ...current,
+                  header: {
+                    ...current.header,
+                    description: event.target.value,
+                  },
+                }))
+              }
+            />
+          </SectionBlock>
+
+          <SectionBlock
+            title="Shared Contact Details"
+            description="Update once here and the same details will appear in both the footer and the Contact page."
+          >
+            <Input
+              label="Footer Section Title"
+              value={contactContent.footerTitle}
+              onChange={(event) =>
+                setContactContent((current) => ({
+                  ...current,
+                  footerTitle: event.target.value,
+                }))
+              }
+            />
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="space-y-4 rounded-2xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] p-4">
+                <Input
+                  label="Email Label"
+                  value={contactContent.email.label}
+                  onChange={(event) =>
+                    updateContactField("email", "label", event.target.value)
+                  }
+                />
+                <Input
+                  label="Email Value"
+                  value={contactContent.email.value}
+                  onChange={(event) =>
+                    updateContactField("email", "value", event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="space-y-4 rounded-2xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] p-4">
+                <Input
+                  label="Phone Label"
+                  value={contactContent.phone.label}
+                  onChange={(event) =>
+                    updateContactField("phone", "label", event.target.value)
+                  }
+                />
+                <Input
+                  label="Phone Value"
+                  value={contactContent.phone.value}
+                  onChange={(event) =>
+                    updateContactField("phone", "value", event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="space-y-4 rounded-2xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] p-4">
+                <Input
+                  label="Location Label"
+                  value={contactContent.location.label}
+                  onChange={(event) =>
+                    updateContactField("location", "label", event.target.value)
+                  }
+                />
+                <Input
+                  label="Location Value"
+                  value={contactContent.location.value}
+                  onChange={(event) =>
+                    updateContactField("location", "value", event.target.value)
+                  }
+                />
+              </div>
             </div>
           </SectionBlock>
         </Card>

@@ -1,10 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { siteConfig } from "@/lib/config";
+import { getContactPageContent } from "@/lib/site-content.server";
 import { HiHeart } from "react-icons/hi";
 import devoriaLogo from "../../../devoriaLogo.png";
 
-export default function Footer() {
+export default async function Footer() {
+  const content = await getContactPageContent();
+
   return (
     <footer className="border-t border-[var(--color-dark-border)] bg-[var(--color-dark)]">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -61,12 +64,26 @@ export default function Footer() {
           {/* Contact */}
           <div>
             <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white">
-              Contact
+              {content.footerTitle}
             </h4>
             <div className="flex flex-col gap-3 text-sm text-[var(--color-text-muted)]">
-              <span>devoriateam@gmail.com</span>
-              <span>+961 65544257</span>
-              <span>Lebanon, Saida</span>
+              {content.email.value ? (
+                <a
+                  href={`mailto:${content.email.value}`}
+                  className="transition-colors hover:text-[var(--color-primary-light)]"
+                >
+                  {content.email.value}
+                </a>
+              ) : null}
+              {content.phone.value ? (
+                <a
+                  href={`tel:${content.phone.value.replace(/\s+/g, "")}`}
+                  className="transition-colors hover:text-[var(--color-primary-light)]"
+                >
+                  {content.phone.value}
+                </a>
+              ) : null}
+              {content.location.value ? <span>{content.location.value}</span> : null}
             </div>
           </div>
         </div>

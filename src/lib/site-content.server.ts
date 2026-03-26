@@ -7,8 +7,10 @@ import {
   SITE_CONTENT_DOCS,
   HomePageContent,
   AboutPageContent,
+  ContactPageContent,
   normalizeHomePageContent,
   normalizeAboutPageContent,
+  normalizeContactPageContent,
 } from "@/lib/site-content";
 
 async function getSiteContentDocument(docId: string) {
@@ -35,4 +37,9 @@ export async function getHomePageContent(): Promise<HomePageContent> {
 export async function getAboutPageContent(): Promise<AboutPageContent> {
   const raw = await getSiteContentDocument(SITE_CONTENT_DOCS.about);
   return normalizeAboutPageContent(raw);
+}
+
+export async function getContactPageContent(): Promise<ContactPageContent> {
+  const raw = await getSiteContentDocument(SITE_CONTENT_DOCS.contact);
+  return normalizeContactPageContent(raw);
 }

@@ -3,6 +3,7 @@ export const SITE_CONTENT_COLLECTION = "site_content";
 export const SITE_CONTENT_DOCS = {
   home: "home",
   about: "about",
+  contact: "contact",
 } as const;
 
 export type SiteContentDocId =
@@ -84,6 +85,22 @@ export interface AboutPageContent {
   values: AboutValueItem[];
   teamTitle: string;
   teamMembers: TeamMember[];
+}
+
+export interface ContactInfoField {
+  label: string;
+  value: string;
+}
+
+export interface ContactPageContent {
+  header: {
+    title: string;
+    description: string;
+  };
+  footerTitle: string;
+  email: ContactInfoField;
+  phone: ContactInfoField;
+  location: ContactInfoField;
 }
 
 export const EMPTY_HOME_STAT: HomeStat = {
@@ -188,6 +205,27 @@ export const DEFAULT_ABOUT_PAGE_CONTENT: AboutPageContent = {
   ],
 };
 
+export const DEFAULT_CONTACT_PAGE_CONTENT: ContactPageContent = {
+  header: {
+    title: "Contact Us",
+    description:
+      "Have a project in mind? Let's talk about how we can help bring your vision to life.",
+  },
+  footerTitle: "Contact",
+  email: {
+    label: "Email",
+    value: "devoriateam@gmail.com",
+  },
+  phone: {
+    label: "Phone",
+    value: "+961 65544257",
+  },
+  location: {
+    label: "Location",
+    value: "Lebanon, Saida",
+  },
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -205,6 +243,10 @@ function cloneAboutValue(item: AboutValueItem): AboutValueItem {
 }
 
 function cloneTeamMember(item: TeamMember): TeamMember {
+  return { ...item };
+}
+
+function cloneContactInfoField(item: ContactInfoField): ContactInfoField {
   return { ...item };
 }
 
@@ -260,6 +302,20 @@ function normalizeTeamMember(value: unknown, fallback: TeamMember): TeamMember {
   };
 }
 
+function normalizeContactInfoField(
+  value: unknown,
+  fallback: ContactInfoField
+): ContactInfoField {
+  if (!isRecord(value)) {
+    return cloneContactInfoField(fallback);
+  }
+
+  return {
+    label: readString(value.label, fallback.label),
+    value: readString(value.value, fallback.value),
+  };
+}
+
 export function createDefaultHomePageContent(): HomePageContent {
   return {
     hero: { ...DEFAULT_HOME_PAGE_CONTENT.hero },
@@ -278,6 +334,16 @@ export function createDefaultAboutPageContent(): AboutPageContent {
     values: DEFAULT_ABOUT_PAGE_CONTENT.values.map(cloneAboutValue),
     teamTitle: DEFAULT_ABOUT_PAGE_CONTENT.teamTitle,
     teamMembers: DEFAULT_ABOUT_PAGE_CONTENT.teamMembers.map(cloneTeamMember),
+  };
+}
+
+export function createDefaultContactPageContent(): ContactPageContent {
+  return {
+    header: { ...DEFAULT_CONTACT_PAGE_CONTENT.header },
+    footerTitle: DEFAULT_CONTACT_PAGE_CONTENT.footerTitle,
+    email: cloneContactInfoField(DEFAULT_CONTACT_PAGE_CONTENT.email),
+    phone: cloneContactInfoField(DEFAULT_CONTACT_PAGE_CONTENT.phone),
+    location: cloneContactInfoField(DEFAULT_CONTACT_PAGE_CONTENT.location),
   };
 }
 
@@ -395,5 +461,22 @@ export function normalizeAboutPageContent(value: unknown): AboutPageContent {
               defaults.teamMembers[index] ?? EMPTY_TEAM_MEMBER
             )
           ),
+  };
+}
+
+export function normalizeContactPageContent(value: unknown): ContactPageContent {
+  const defaults = createDefaultContactPageContent();
+  const raw = isRecord(value) ? value : {};
+  const header = isRecord(raw.header) ? raw.header : {};
+
+  return {
+    header: {
+      title: readString(header.title, defaults.header.title),
+      description: readString(header.description, defaults.header.description),
+    },
+    footerTitle: readString(raw.footerTitle, defaults.footerTitle),
+    email: normalizeContactInfoField(raw.email, defaults.email),
+    phone: normalizeContactInfoField(raw.phone, defaults.phone),
+    location: normalizeContactInfoField(raw.location, defaults.location),
   };
 }
