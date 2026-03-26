@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, useRef } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -25,6 +25,8 @@ import {
   HiPencil,
   HiShieldCheck,
   HiTrash,
+  HiChevronDown,
+  HiSparkles,
 } from "react-icons/hi";
 
 const CREATE_ROLE_OPTION = "__create_role__";
@@ -144,6 +146,104 @@ function EditablePasswordField({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface RoleSelectorProps {
+  value: string;
+  onChange: (value: string) => void;
+  roles: AdminRoleDefinition[];
+  disabled?: boolean;
+  helperText?: string;
+}
+
+function RoleSelector({
+  value,
+  onChange,
+  roles,
+  disabled,
+  helperText,
+}: RoleSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const selectedRole = roles.find((r) => r.id === value);
+  const displayName = selectedRole?.name || value;
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-[var(--color-text)]">
+        Role
+      </label>
+      <div ref={dropdownRef} className="relative">
+        <button
+          type="button"
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          className="flex w-full items-center justify-between rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-left text-sm text-white outline-none transition-colors focus:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span>{displayName}</span>
+          <HiChevronDown
+            className={`text-[var(--color-text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {isOpen && (
+          <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] shadow-xl">
+            <div className="max-h-60 overflow-y-auto py-1">
+              {roles.map((role) => (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(role.id);
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-white/5 ${
+                    value === role.id
+                      ? "bg-[var(--color-primary)]/10 text-[var(--color-primary-light)]"
+                      : "text-white"
+                  }`}
+                >
+                  <HiShieldCheck className="text-[var(--color-text-muted)]" />
+                  {role.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="border-t border-[var(--color-dark-border)] p-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(CREATE_ROLE_OPTION);
+                  setIsOpen(false);
+                }}
+                className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-[var(--color-primary)] via-[var(--color-accent)] to-[var(--color-primary)] bg-[length:200%_100%] px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-300" />
+                <span>Create New Role</span>
+                <HiPlus className="text-lg" />
+              </button>
+            </div>
+          </div>
+        )}
+        <input type="hidden" name="role" value={value} />
+      </div>
+      {helperText ? (
+        <p className="text-xs text-[var(--color-text-muted)]">{helperText}</p>
+      ) : null}
     </div>
   );
 }
@@ -623,12 +723,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  const roleOptions = roles.map((role) => (
-    <option key={role.id} value={role.id}>
-      {role.name}
-    </option>
-  ));
-
   return (
     <AdminGuard allowedRoles={["admin"]} unauthorizedMode="not-found">
       <div>
@@ -936,32 +1030,17 @@ export default function AdminUsersPage() {
                     name="displayName"
                     defaultValue={editing.displayName ?? ""}
                   />
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-[var(--color-text)]">
-                      Role
-                    </label>
-                    <select
-                      name="role"
-                      value={selectedEditRole}
-                      onChange={(event) =>
-                        handleRolePickerChange("edit", event.target.value)
-                      }
-                      disabled={editing.id === profile?.uid}
-                      className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none focus:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {roleOptions}
-                      <option value={CREATE_ROLE_OPTION}>+ Create Role</option>
-                    </select>
-                    {editing.id === profile?.uid && adminCount >= 1 ? (
-                      <p className="text-xs text-[var(--color-text-muted)]">
-                        Your own role is locked here so the panel always keeps an admin.
-                      </p>
-                    ) : (
-                      <p className="text-xs text-[var(--color-text-muted)]">
-                        Pick an existing role or choose + Create Role to define a custom permission set.
-                      </p>
-                    )}
-                  </div>
+                  <RoleSelector
+                    value={selectedEditRole}
+                    onChange={(value) => handleRolePickerChange("edit", value)}
+                    roles={roles}
+                    disabled={editing.id === profile?.uid}
+                    helperText={
+                      editing.id === profile?.uid && adminCount >= 1
+                        ? "Your own role is locked here so the panel always keeps an admin."
+                        : "Pick an existing role or create a new custom role."
+                    }
+                  />
                   <EditablePasswordField
                     value={editPasswordValue}
                     editing={isEditingPassword}
@@ -1034,25 +1113,12 @@ export default function AdminUsersPage() {
                   visible={showAddPassword}
                   onToggle={() => setShowAddPassword((current) => !current)}
                 />
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-[var(--color-text)]">
-                    Role
-                  </label>
-                  <select
-                    name="role"
-                    value={selectedAddRole}
-                    onChange={(event) =>
-                      handleRolePickerChange("add", event.target.value)
-                    }
-                    className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none focus:border-[var(--color-primary)]"
-                  >
-                    {roleOptions}
-                    <option value={CREATE_ROLE_OPTION}>+ Create Role</option>
-                  </select>
-                  <p className="text-xs text-[var(--color-text-muted)]">
-                    Built-in roles are fixed. Custom roles use the permissions you define.
-                  </p>
-                </div>
+                <RoleSelector
+                  value={selectedAddRole}
+                  onChange={(value) => handleRolePickerChange("add", value)}
+                  roles={roles}
+                  helperText="Built-in roles are fixed. Custom roles use the permissions you define."
+                />
                 <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
                   <Button
                     type="button"

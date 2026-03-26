@@ -137,3 +137,17 @@ svg {
 .hover\:text-red-400:hover {
   color: var(--color-primary-light) !important;
 }
+
+/* Shimmer animation for Create Role button */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.group-hover\:animate-shimmer {
+  animation: shimmer 0.8s ease-in-out;
+}
