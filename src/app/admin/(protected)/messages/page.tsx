@@ -12,22 +12,23 @@ import Badge from "@/components/ui/Badge";
 import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import AdminGuard from "@/components/admin/AdminGuard";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { HiEye, HiTrash } from "react-icons/hi";
 import { formatDate } from "@/utils";
 import { useState } from "react";
 
 export default function AdminMessagesPage() {
   return (
-    <AdminGuard
-      allowedRoles={["admin", "editor"]}
-      unauthorizedMode="not-found"
-    >
+    <AdminGuard requiredPermission={{ resource: "messages" }} unauthorizedMode="not-found">
       <AdminMessagesContent />
     </AdminGuard>
   );
 }
 
 function AdminMessagesContent() {
+  const access = useAdminAccess();
+  const canUpdate = access.can("messages", "update");
+  const canDelete = access.can("messages", "delete");
   const {
     data: messages,
     loading,
@@ -40,7 +41,7 @@ function AdminMessagesContent() {
 
   async function handleView(msg: ContactMessage) {
     setViewing(msg);
-    if (!msg.read) {
+    if (!msg.read && canUpdate) {
       try {
         await updateDocument("messages", msg.id, { read: true });
         setData(
@@ -57,7 +58,7 @@ function AdminMessagesContent() {
   }
 
   async function handleDelete() {
-    if (!deletingMessage) return;
+    if (!deletingMessage || !canDelete) return;
     setDeleting(true);
     try {
       await deleteDocument("messages", deletingMessage.id);
@@ -131,12 +132,14 @@ function AdminMessagesContent() {
                   >
                     <HiEye />
                   </button>
-                  <button
-                    onClick={() => requestDelete(msg)}
-                    className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                  >
-                    <HiTrash />
-                  </button>
+                  {canDelete ? (
+                    <button
+                      onClick={() => requestDelete(msg)}
+                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    >
+                      <HiTrash />
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -180,12 +183,14 @@ function AdminMessagesContent() {
                         >
                           <HiEye />
                         </button>
-                        <button
-                          onClick={() => requestDelete(msg)}
-                          className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                        >
-                          <HiTrash />
-                        </button>
+                        {canDelete ? (
+                          <button
+                            onClick={() => requestDelete(msg)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <HiTrash />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

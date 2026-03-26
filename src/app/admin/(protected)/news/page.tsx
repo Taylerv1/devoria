@@ -18,21 +18,23 @@ import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import AdminGuard from "@/components/admin/AdminGuard";
 import ImageUpload from "@/components/admin/ImageUpload";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { slugify, formatDate } from "@/utils";
 
 export default function AdminNewsPage() {
   return (
-    <AdminGuard
-      allowedRoles={["admin", "blog_manager"]}
-      unauthorizedMode="not-found"
-    >
+    <AdminGuard requiredPermission={{ resource: "news" }} unauthorizedMode="not-found">
       <AdminNewsContent />
     </AdminGuard>
   );
 }
 
 function AdminNewsContent() {
+  const access = useAdminAccess();
+  const canCreate = access.can("news", "create");
+  const canUpdate = access.can("news", "update");
+  const canDelete = access.can("news", "delete");
   const {
     data: news,
     loading,
@@ -47,12 +49,14 @@ function AdminNewsContent() {
   const [deleting, setDeleting] = useState(false);
 
   function openCreate() {
+    if (!canCreate) return;
     setEditing(null);
     setCoverImage("");
     setModalOpen(true);
   }
 
   function openEdit(item: NewsItem) {
+    if (!canUpdate) return;
     setEditing(item);
     setCoverImage(item.coverImage || "");
     setModalOpen(true);
@@ -60,6 +64,7 @@ function AdminNewsContent() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if ((editing && !canUpdate) || (!editing && !canCreate)) return;
     setSaving(true);
 
     const form = new FormData(e.currentTarget);
@@ -107,7 +112,7 @@ function AdminNewsContent() {
   }
 
   async function handleDelete() {
-    if (!deletingItem) return;
+    if (!deletingItem || !canDelete) return;
     setDeleting(true);
     try {
       await deleteDocument("news", deletingItem.id);
@@ -137,9 +142,11 @@ function AdminNewsContent() {
             Manage company news and announcements.
           </p>
         </div>
-        <Button onClick={openCreate} className="w-full sm:w-auto">
-          <HiPlus /> Add News
-        </Button>
+        {canCreate ? (
+          <Button onClick={openCreate} className="w-full sm:w-auto">
+            <HiPlus /> Add News
+          </Button>
+        ) : null}
       </div>
 
       {news.length === 0 ? (
@@ -177,18 +184,22 @@ function AdminNewsContent() {
                     {item.status}
                   </Badge>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openEdit(item)}
-                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
-                    >
-                      <HiPencil />
-                    </button>
-                    <button
-                      onClick={() => requestDelete(item)}
-                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                    >
-                      <HiTrash />
-                    </button>
+                    {canUpdate ? (
+                      <button
+                        onClick={() => openEdit(item)}
+                        className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                      >
+                        <HiPencil />
+                      </button>
+                    ) : null}
+                    {canDelete ? (
+                      <button
+                        onClick={() => requestDelete(item)}
+                        className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      >
+                        <HiTrash />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -233,18 +244,22 @@ function AdminNewsContent() {
                     </td>
                     <td className="py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEdit(item)}
-                          className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
-                        >
-                          <HiPencil />
-                        </button>
-                        <button
-                          onClick={() => requestDelete(item)}
-                          className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                        >
-                          <HiTrash />
-                        </button>
+                        {canUpdate ? (
+                          <button
+                            onClick={() => openEdit(item)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                          >
+                            <HiPencil />
+                          </button>
+                        ) : null}
+                        {canDelete ? (
+                          <button
+                            onClick={() => requestDelete(item)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <HiTrash />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

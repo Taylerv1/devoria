@@ -8,16 +8,33 @@ import Input from "@/components/ui/Input";
 import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import AdminGuard from "@/components/admin/AdminGuard";
-import { useAuth, UserRole } from "@/context/AuthContext";
-import { HiPencil, HiTrash, HiPlus, HiEye, HiEyeOff } from "react-icons/hi";
+import { useAuth } from "@/context/AuthContext";
+import {
+  ADMIN_PERMISSION_ACTION_LABELS,
+  ADMIN_PERMISSION_GROUPS,
+  AdminPermissionAction,
+  AdminPermissionMatrix,
+  AdminPermissionResource,
+  AdminRoleDefinition,
+  createEmptyPermissionMatrix,
+} from "@/lib/admin-permissions";
+import {
+  HiEye,
+  HiEyeOff,
+  HiPlus,
+  HiPencil,
+  HiShieldCheck,
+  HiTrash,
+} from "react-icons/hi";
 
-const ROLE_OPTIONS: UserRole[] = ["admin", "editor", "blog_manager"];
+const CREATE_ROLE_OPTION = "__create_role__";
 
 interface AdminUser {
   id: string;
   email: string;
   displayName: string | null;
-  role: UserRole;
+  role: string;
+  roleName: string;
 }
 
 interface PasswordFieldProps {
@@ -65,9 +82,9 @@ function PasswordField({
           {visible ? <HiEyeOff className="text-lg" /> : <HiEye className="text-lg" />}
         </button>
       </div>
-      {helperText && (
+      {helperText ? (
         <p className="text-xs text-[var(--color-text-muted)]">{helperText}</p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -101,14 +118,14 @@ function EditablePasswordField({
           name={editing ? "password" : undefined}
           type={editing && visible ? "text" : "password"}
           value={displayValue}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           readOnly={!editing}
           minLength={editing ? 6 : undefined}
           autoComplete="new-password"
           className="w-full rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 pr-28 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none transition-colors focus:border-[var(--color-primary)]"
         />
         <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
-          {editing && (
+          {editing ? (
             <button
               type="button"
               onClick={onToggleVisibility}
@@ -117,7 +134,7 @@ function EditablePasswordField({
             >
               {visible ? <HiEyeOff className="text-lg" /> : <HiEye className="text-lg" />}
             </button>
-          )}
+          ) : null}
           <button
             type="button"
             onClick={onToggleEditing}
@@ -131,26 +148,118 @@ function EditablePasswordField({
   );
 }
 
+function applyFullAccess(enabled: boolean): AdminPermissionMatrix {
+  const matrix = createEmptyPermissionMatrix();
+
+  ADMIN_PERMISSION_GROUPS.forEach((group) => {
+    group.actions.forEach((action) => {
+      matrix[group.resource][action] = enabled;
+    });
+  });
+
+  return matrix;
+}
+
+function hasFullAccess(permissions: AdminPermissionMatrix) {
+  return ADMIN_PERMISSION_GROUPS.every((group) =>
+    group.actions.every((action) => permissions[group.resource][action])
+  );
+}
+
+function PermissionGroupEditor({
+  group,
+  permissions,
+  onToggle,
+}: {
+  group: (typeof ADMIN_PERMISSION_GROUPS)[number];
+  permissions: AdminPermissionMatrix;
+  onToggle: (
+    resource: AdminPermissionResource,
+    action: AdminPermissionAction,
+    value: boolean
+  ) => void;
+}) {
+  const enabledCount = group.actions.filter(
+    (action) => permissions[group.resource][action]
+  ).length;
+
+  return (
+    <details className="rounded-2xl border border-[var(--color-dark-border)] bg-[var(--color-dark)]/60 p-4">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
+        <div>
+          <p className="font-medium text-white">{group.label}</p>
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+            {group.description}
+          </p>
+        </div>
+        <span className="rounded-full border border-[var(--color-dark-border)] px-2.5 py-1 text-xs text-[var(--color-text-muted)]">
+          {enabledCount}/{group.actions.length}
+        </span>
+      </summary>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {group.actions.map((action) => (
+          <label
+            key={`${group.resource}-${action}`}
+            className="flex items-center gap-3 rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-3"
+          >
+            <input
+              type="checkbox"
+              checked={permissions[group.resource][action]}
+              onChange={(event) =>
+                onToggle(group.resource, action, event.target.checked)
+              }
+              className="h-4 w-4 rounded border-[var(--color-dark-border)] bg-[var(--color-dark-card)]"
+            />
+            <div>
+              <p className="text-sm font-medium text-white">
+                {ADMIN_PERMISSION_ACTION_LABELS[action]}
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                {group.label} - {ADMIN_PERMISSION_ACTION_LABELS[action]}
+              </p>
+            </div>
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export default function AdminUsersPage() {
   const { profile } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [roles, setRoles] = useState<AdminRoleDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [saving, setSaving] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [creatingRole, setCreatingRole] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
   const [showAddPassword, setShowAddPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
   const [editPasswordValue, setEditPasswordValue] = useState("");
+  const [selectedAddRole, setSelectedAddRole] = useState("editor");
+  const [selectedEditRole, setSelectedEditRole] = useState("editor");
+  const [roleModalTarget, setRoleModalTarget] = useState<"add" | "edit">("add");
+  const [roleName, setRoleName] = useState("");
+  const [rolePermissions, setRolePermissions] = useState<AdminPermissionMatrix>(
+    createEmptyPermissionMatrix()
+  );
 
   const adminCount = useMemo(
     () => users.filter((user) => user.role === "admin").length,
     [users]
+  );
+  const customRoles = useMemo(
+    () => roles.filter((role) => !role.isSystem),
+    [roles]
   );
 
   useEffect(() => {
@@ -158,30 +267,48 @@ export default function AdminUsersPage() {
       return;
     }
 
-    void fetchUsers();
+    void fetchData();
   }, [profile?.role]);
 
-  async function fetchUsers() {
+  async function fetchData() {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch("/api/admin/users", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+      const [usersRes, rolesRes] = await Promise.all([
+        fetch("/api/admin/users", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }),
+        fetch("/api/admin/roles", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }),
+      ]);
 
-      if (!res.ok) {
-        const payload = (await res.json().catch(() => null)) as
+      if (!usersRes.ok) {
+        const payload = (await usersRes.json().catch(() => null)) as
           | { error?: string }
           | null;
         throw new Error(payload?.error || "Failed to load users");
       }
 
-      const result = (await res.json()) as { users?: AdminUser[] };
-      setUsers(Array.isArray(result.users) ? result.users : []);
+      if (!rolesRes.ok) {
+        const payload = (await rolesRes.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(payload?.error || "Failed to load roles");
+      }
+
+      const usersPayload = (await usersRes.json()) as { users?: AdminUser[] };
+      const rolesPayload = (await rolesRes.json()) as {
+        roles?: AdminRoleDefinition[];
+      };
+
+      setUsers(Array.isArray(usersPayload.users) ? usersPayload.users : []);
+      setRoles(Array.isArray(rolesPayload.roles) ? rolesPayload.roles : []);
     } catch (err) {
-      console.error("Load users failed:", err);
+      console.error("Load users/roles failed:", err);
       setError(err instanceof Error ? err.message : "Failed to load users");
     } finally {
       setLoading(false);
@@ -190,41 +317,132 @@ export default function AdminUsersPage() {
 
   function openEdit(user: AdminUser) {
     setEditing(user);
+    setSelectedEditRole(user.role);
     setShowEditPassword(false);
     setIsEditingPassword(false);
     setEditPasswordValue("");
     setModalOpen(true);
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!editing) return;
+  function resetRoleModal() {
+    setRoleName("");
+    setRolePermissions(createEmptyPermissionMatrix());
+    setCreatingRole(false);
+  }
+
+  function openRoleModal(target: "add" | "edit") {
+    setRoleModalTarget(target);
+    resetRoleModal();
+    setRoleModalOpen(true);
+  }
+
+  function handleRolePickerChange(target: "add" | "edit", value: string) {
+    if (value === CREATE_ROLE_OPTION) {
+      openRoleModal(target);
+      return;
+    }
+
+    if (target === "add") {
+      setSelectedAddRole(value);
+      return;
+    }
+
+    setSelectedEditRole(value);
+  }
+
+  function updateRolePermission(
+    resource: AdminPermissionResource,
+    action: AdminPermissionAction,
+    value: boolean
+  ) {
+    setRolePermissions((current) => ({
+      ...current,
+      [resource]: {
+        ...current[resource],
+        [action]: value,
+      },
+    }));
+  }
+
+  async function handleCreateRole(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCreatingRole(true);
+
+    try {
+      const response = await fetch("/api/admin/roles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: roleName,
+          permissions: rolePermissions,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(payload?.error || "Failed to create role");
+      }
+
+      const result = (await response.json()) as { role: AdminRoleDefinition };
+      const nextRoles = [...roles, result.role].sort((left, right) => {
+        if (left.isSystem !== right.isSystem) {
+          return left.isSystem ? -1 : 1;
+        }
+
+        return left.name.localeCompare(right.name);
+      });
+
+      setRoles(nextRoles);
+
+      if (roleModalTarget === "add") {
+        setSelectedAddRole(result.role.id);
+      } else {
+        setSelectedEditRole(result.role.id);
+      }
+
+      setRoleModalOpen(false);
+      resetRoleModal();
+    } catch (err) {
+      console.error("Create role failed:", err);
+      alert(err instanceof Error ? err.message : "Failed to create role");
+    } finally {
+      setCreatingRole(false);
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editing) {
+      return;
+    }
+
     setSaving(true);
 
-    const form = new FormData(e.currentTarget);
-    const submittedRole = form.get("role");
+    const form = new FormData(event.currentTarget);
     const payload = {
       uid: editing.id,
       displayName: String(form.get("displayName") || "").trim(),
-      role: (submittedRole || editing.role) as UserRole,
+      role: selectedEditRole,
       password: isEditingPassword ? editPasswordValue : "",
     };
 
     try {
-      const res = await fetch("/api/admin/users", {
+      const response = await fetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const errorPayload = (await res.json().catch(() => null)) as
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => null)) as
           | { error?: string }
           | null;
         throw new Error(errorPayload?.error || "Failed to update user");
       }
 
-      const result = (await res.json()) as { user: AdminUser };
+      const result = (await response.json()) as { user: AdminUser };
       setUsers((current) =>
         current.map((user) => (user.id === result.user.id ? result.user : user))
       );
@@ -246,18 +464,21 @@ export default function AdminUsersPage() {
   }
 
   async function handleDelete() {
-    if (!deletingUser) return;
+    if (!deletingUser) {
+      return;
+    }
+
     setDeletingId(deletingUser.id);
 
     try {
-      const res = await fetch("/api/admin/users", {
+      const response = await fetch("/api/admin/users", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uid: deletingUser.id }),
       });
 
-      if (!res.ok) {
-        const payload = (await res.json().catch(() => null)) as
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as
           | { error?: string }
           | null;
         throw new Error(payload?.error || "Failed to delete user");
@@ -272,36 +493,37 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function handleAdd(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleAdd(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setAdding(true);
 
-    const formElement = e.currentTarget;
+    const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const payload = {
       email: String(form.get("email") || "").trim(),
       password: String(form.get("password") || ""),
-      role: form.get("role") as UserRole,
+      role: selectedAddRole,
       displayName: String(form.get("displayName") || "").trim(),
     };
 
     try {
-      const res = await fetch("/api/admin/users", {
+      const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const errorPayload = (await res.json().catch(() => null)) as
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => null)) as
           | { error?: string }
           | null;
         throw new Error(errorPayload?.error || "Failed to create user");
       }
 
-      const result = (await res.json()) as { user: AdminUser };
+      const result = (await response.json()) as { user: AdminUser };
       setUsers((current) => [result.user, ...current]);
       formElement.reset();
+      setSelectedAddRole("editor");
       setAddModalOpen(false);
       setShowAddPassword(false);
     } catch (err) {
@@ -311,6 +533,12 @@ export default function AdminUsersPage() {
       setAdding(false);
     }
   }
+
+  const roleOptions = roles.map((role) => (
+    <option key={role.id} value={role.id}>
+      {role.name}
+    </option>
+  ));
 
   return (
     <AdminGuard allowedRoles={["admin"]} unauthorizedMode="not-found">
@@ -325,25 +553,81 @@ export default function AdminUsersPage() {
               <div>
                 <h1 className="text-2xl font-bold text-white">Users</h1>
                 <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                  Manage team accounts. This section is only visible to admins.
+                  Manage team accounts and create custom roles with page-based permissions.
                 </p>
               </div>
-              <Button
-                onClick={() => {
-                  setShowAddPassword(false);
-                  setAddModalOpen(true);
-                }}
-                className="w-full sm:w-auto"
-              >
-                <HiPlus className="mr-1.5 inline" /> Add User
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  onClick={() => openRoleModal("add")}
+                  className="w-full sm:w-auto"
+                >
+                  <HiShieldCheck className="mr-1.5 inline" /> Create Role
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowAddPassword(false);
+                    setSelectedAddRole("editor");
+                    setAddModalOpen(true);
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  <HiPlus className="mr-1.5 inline" /> Add User
+                </Button>
+              </div>
             </div>
 
-            {error && (
+            <div className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_2fr]">
+              <Card hover={false}>
+                <p className="text-sm font-medium uppercase tracking-[0.24em] text-[var(--color-primary-light)]">
+                  Roles
+                </p>
+                <h2 className="mt-2 text-lg font-semibold text-white">
+                  Available Role Presets
+                </h2>
+                <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+                  Built-in roles stay fixed. Custom roles can be created and assigned to users from the role selector.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {roles.map((role) => (
+                    <Badge
+                      key={role.id}
+                      variant={role.isSystem ? "accent" : "muted"}
+                    >
+                      {role.name}
+                    </Badge>
+                  ))}
+                </div>
+              </Card>
+
+              <Card hover={false}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white">
+                      Custom Roles
+                    </p>
+                    <p className="text-sm text-[var(--color-text-muted)]">
+                      {customRoles.length === 0
+                        ? "No custom roles created yet."
+                        : `${customRoles.length} custom role${customRoles.length === 1 ? "" : "s"} available for assignment.`}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => openRoleModal("add")}
+                    className="w-full sm:w-auto"
+                  >
+                    <HiPlus /> New Custom Role
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {error ? (
               <p className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
                 {error}
               </p>
-            )}
+            ) : null}
 
             {users.length === 0 ? (
               <Card hover={false}>
@@ -358,7 +642,10 @@ export default function AdminUsersPage() {
                     const isCurrentAdmin = user.id === profile?.uid;
 
                     return (
-                      <div key={user.id} className="rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] p-4">
+                      <div
+                        key={user.id}
+                        className="rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] p-4"
+                      >
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-xs font-bold text-[var(--color-primary-light)]">
                             {(user.displayName || user.email || "?")
@@ -369,14 +656,26 @@ export default function AdminUsersPage() {
                               .toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium text-white">{user.displayName || user.email}</p>
-                            <p className="truncate text-xs text-[var(--color-text-muted)]">{user.email}</p>
+                            <p className="truncate font-medium text-white">
+                              {user.displayName || user.email}
+                            </p>
+                            <p className="truncate text-xs text-[var(--color-text-muted)]">
+                              {user.email}
+                            </p>
                           </div>
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between">
-                          <Badge variant={user.role === "admin" ? "primary" : "muted"}>
-                            {user.role}
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <Badge
+                            variant={
+                              user.role === "admin"
+                                ? "primary"
+                                : user.role === "editor" || user.role === "blog_manager"
+                                  ? "accent"
+                                  : "muted"
+                            }
+                          >
+                            {user.roleName}
                           </Badge>
                           <div className="flex items-center gap-2">
                             <button
@@ -400,11 +699,11 @@ export default function AdminUsersPage() {
                           </div>
                         </div>
 
-                        {isCurrentAdmin && (
+                        {isCurrentAdmin ? (
                           <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                             Current admin account
                           </p>
-                        )}
+                        ) : null}
                       </div>
                     );
                   })}
@@ -451,11 +750,11 @@ export default function AdminUsersPage() {
                                   <span className="font-medium text-white">
                                     {user.displayName || user.email}
                                   </span>
-                                  {isCurrentAdmin && (
+                                  {isCurrentAdmin ? (
                                     <p className="text-xs text-[var(--color-text-muted)]">
                                       Current admin account
                                     </p>
-                                  )}
+                                  ) : null}
                                 </div>
                               </div>
                             </td>
@@ -464,9 +763,15 @@ export default function AdminUsersPage() {
                             </td>
                             <td className="py-4">
                               <Badge
-                                variant={user.role === "admin" ? "primary" : "muted"}
+                                variant={
+                                  user.role === "admin"
+                                    ? "primary"
+                                    : user.role === "editor" || user.role === "blog_manager"
+                                      ? "accent"
+                                      : "muted"
+                                }
                               >
-                                {user.role}
+                                {user.roleName}
                               </Badge>
                             </td>
                             <td className="py-4">
@@ -511,7 +816,7 @@ export default function AdminUsersPage() {
               }}
               title="Edit User"
             >
-              {editing && (
+              {editing ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-[var(--color-text)]">
@@ -532,19 +837,23 @@ export default function AdminUsersPage() {
                     </label>
                     <select
                       name="role"
-                      defaultValue={editing.role}
+                      value={selectedEditRole}
+                      onChange={(event) =>
+                        handleRolePickerChange("edit", event.target.value)
+                      }
                       disabled={editing.id === profile?.uid}
                       className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none focus:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {ROLE_OPTIONS.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
+                      {roleOptions}
+                      <option value={CREATE_ROLE_OPTION}>+ Create Role</option>
                     </select>
-                    {editing.id === profile?.uid && adminCount >= 1 && (
+                    {editing.id === profile?.uid && adminCount >= 1 ? (
                       <p className="text-xs text-[var(--color-text-muted)]">
                         Your own role is locked here so the panel always keeps an admin.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[var(--color-text-muted)]">
+                        Pick an existing role or choose + Create Role to define a custom permission set.
                       </p>
                     )}
                   </div>
@@ -553,7 +862,9 @@ export default function AdminUsersPage() {
                     editing={isEditingPassword}
                     visible={showEditPassword}
                     onChange={setEditPasswordValue}
-                    onToggleVisibility={() => setShowEditPassword((current) => !current)}
+                    onToggleVisibility={() =>
+                      setShowEditPassword((current) => !current)
+                    }
                     onToggleEditing={() => {
                       setIsEditingPassword((current) => {
                         const next = !current;
@@ -584,7 +895,7 @@ export default function AdminUsersPage() {
                     </Button>
                   </div>
                 </form>
-              )}
+              ) : null}
             </AdminModal>
 
             <AdminModal
@@ -592,6 +903,7 @@ export default function AdminUsersPage() {
               onClose={() => {
                 setAddModalOpen(false);
                 setShowAddPassword(false);
+                setSelectedAddRole("editor");
               }}
               title="Add User"
             >
@@ -623,15 +935,18 @@ export default function AdminUsersPage() {
                   </label>
                   <select
                     name="role"
-                    defaultValue="editor"
+                    value={selectedAddRole}
+                    onChange={(event) =>
+                      handleRolePickerChange("add", event.target.value)
+                    }
                     className="rounded-lg border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-4 py-2.5 text-sm text-white outline-none focus:border-[var(--color-primary)]"
                   >
-                    {ROLE_OPTIONS.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
+                    {roleOptions}
+                    <option value={CREATE_ROLE_OPTION}>+ Create Role</option>
                   </select>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    Built-in roles are fixed. Custom roles use the permissions you define.
+                  </p>
                 </div>
                 <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
                   <Button
@@ -640,12 +955,86 @@ export default function AdminUsersPage() {
                     onClick={() => {
                       setAddModalOpen(false);
                       setShowAddPassword(false);
+                      setSelectedAddRole("editor");
                     }}
                   >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={adding}>
                     {adding ? "Creating..." : "Create User"}
+                  </Button>
+                </div>
+              </form>
+            </AdminModal>
+
+            <AdminModal
+              open={roleModalOpen}
+              onClose={() => {
+                setRoleModalOpen(false);
+                resetRoleModal();
+              }}
+              title="Create Role"
+              className="max-w-3xl"
+            >
+              <form onSubmit={handleCreateRole} className="space-y-5">
+                <Input
+                  label="Role Name"
+                  value={roleName}
+                  onChange={(event) => setRoleName(event.target.value)}
+                  placeholder="e.g. Project Reviewer"
+                  required
+                />
+
+                <div className="rounded-2xl border border-[var(--color-dark-border)] bg-[var(--color-dark)]/60 p-4">
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={hasFullAccess(rolePermissions)}
+                      onChange={(event) =>
+                        setRolePermissions(applyFullAccess(event.target.checked))
+                      }
+                      className="mt-1 h-4 w-4 rounded border-[var(--color-dark-border)] bg-[var(--color-dark-card)]"
+                    />
+                    <div>
+                      <p className="font-medium text-white">Full Access</p>
+                      <p className="text-sm text-[var(--color-text-muted)]">
+                        Grants access to every configurable admin section except the admin-only users screen.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-white">Permissions</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">
+                      Open any page section below and choose exactly which actions this role can do.
+                    </p>
+                  </div>
+
+                  {ADMIN_PERMISSION_GROUPS.map((group) => (
+                    <PermissionGroupEditor
+                      key={group.resource}
+                      group={group}
+                      permissions={rolePermissions}
+                      onToggle={updateRolePermission}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setRoleModalOpen(false);
+                      resetRoleModal();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={creatingRole}>
+                    {creatingRole ? "Creating..." : "Create Role"}
                   </Button>
                 </div>
               </form>
@@ -661,7 +1050,9 @@ export default function AdminUsersPage() {
               }
               loading={!!deletingId}
               onClose={() => {
-                if (!deletingId) setDeletingUser(null);
+                if (!deletingId) {
+                  setDeletingUser(null);
+                }
               }}
               onConfirm={handleDelete}
             />

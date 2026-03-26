@@ -9,16 +9,23 @@ import {
 } from "react";
 import { onAuthChange, User } from "@/firebase/auth";
 import { getDocument } from "@/firebase/firestore";
+import {
+  AdminPermissionMatrix,
+  hasAnyAdminAccess,
+  isSystemRoleId,
+  resolveRoleDefinition,
+} from "@/lib/admin-permissions";
 
-export type UserRole = "admin" | "editor" | "blog_manager";
-
-const VALID_ROLES: readonly UserRole[] = ["admin", "editor", "blog_manager"];
+export type UserRole = string;
 
 export interface UserProfile {
   uid: string;
   email: string;
   role: UserRole;
+  roleName: string;
+  permissions: AdminPermissionMatrix;
   displayName?: string;
+  isSystemRole: boolean;
 }
 
 interface AuthContextValue {
@@ -33,6 +40,10 @@ const AuthContext = createContext<AuthContextValue>({
   loading: true,
 });
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -44,8 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (firebaseUser) {
         try {
-          // Refresh the session cookie with a fresh (potentially renewed) token.
-          // Firebase ID tokens expire after 1 hour — this keeps the session alive.
           const idToken = await firebaseUser.getIdToken();
           await fetch("/api/auth/session", {
             method: "POST",
@@ -53,25 +62,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ idToken }),
           });
 
-          // Fetch the user's role from Firestore — no fallback allowed
-          const doc = await getDocument("users", firebaseUser.uid);
-          const raw = doc as unknown as Partial<UserProfile> | null;
+          const userDoc = await getDocument("users", firebaseUser.uid);
+          const rawProfile = isRecord(userDoc)
+            ? (userDoc as Record<string, unknown>)
+            : null;
+          const roleId =
+            rawProfile && typeof rawProfile.role === "string"
+              ? rawProfile.role.trim()
+              : "";
 
-          if (raw && raw.role && (VALID_ROLES as readonly string[]).includes(raw.role)) {
-            setProfile({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email ?? "",
-              role: raw.role,
-              displayName: raw.displayName,
-            });
-          } else {
-            // Authenticated with Firebase but no valid admin profile —
-            // deny access. Do NOT silently elevate any user to admin.
+          if (!roleId) {
             setProfile(null);
+            setLoading(false);
+            return;
           }
+
+          const roleDoc = isSystemRoleId(roleId)
+            ? null
+            : await getDocument("roles", roleId);
+          const roleDefinition = resolveRoleDefinition(roleId, roleDoc);
+
+          if (!roleDefinition || !hasAnyAdminAccess({
+            role: roleId,
+            permissions: roleDefinition.permissions,
+          })) {
+            setProfile(null);
+            setLoading(false);
+            return;
+          }
+
+          setProfile({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email ?? "",
+            role: roleId,
+            roleName: roleDefinition.name,
+            permissions: roleDefinition.permissions,
+            displayName:
+              typeof rawProfile?.displayName === "string"
+                ? rawProfile.displayName
+                : undefined,
+            isSystemRole: roleDefinition.isSystem,
+          });
         } catch (err) {
-          // On any error (network, Firestore unavailable) — fail closed
-          console.error("[Auth] Firestore error:", err);
+          console.error("[Auth] Role resolution error:", err);
           setProfile(null);
         }
       } else {

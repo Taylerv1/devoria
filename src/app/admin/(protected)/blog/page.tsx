@@ -18,21 +18,23 @@ import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import AdminGuard from "@/components/admin/AdminGuard";
 import ImageUpload from "@/components/admin/ImageUpload";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { slugify, formatDate } from "@/utils";
 
 export default function AdminBlogPage() {
   return (
-    <AdminGuard
-      allowedRoles={["admin", "blog_manager"]}
-      unauthorizedMode="not-found"
-    >
+    <AdminGuard requiredPermission={{ resource: "blog" }} unauthorizedMode="not-found">
       <AdminBlogContent />
     </AdminGuard>
   );
 }
 
 function AdminBlogContent() {
+  const access = useAdminAccess();
+  const canCreate = access.can("blog", "create");
+  const canUpdate = access.can("blog", "update");
+  const canDelete = access.can("blog", "delete");
   const {
     data: posts,
     loading,
@@ -47,12 +49,14 @@ function AdminBlogContent() {
   const [deleting, setDeleting] = useState(false);
 
   function openCreate() {
+    if (!canCreate) return;
     setEditing(null);
     setCoverImage("");
     setModalOpen(true);
   }
 
   function openEdit(post: BlogPost) {
+    if (!canUpdate) return;
     setEditing(post);
     setCoverImage(post.coverImage || "");
     setModalOpen(true);
@@ -60,6 +64,7 @@ function AdminBlogContent() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if ((editing && !canUpdate) || (!editing && !canCreate)) return;
     setSaving(true);
 
     const form = new FormData(e.currentTarget);
@@ -112,7 +117,7 @@ function AdminBlogContent() {
   }
 
   async function handleDelete() {
-    if (!deletingPost) return;
+    if (!deletingPost || !canDelete) return;
     setDeleting(true);
     try {
       await deleteDocument("blog", deletingPost.id);
@@ -142,9 +147,11 @@ function AdminBlogContent() {
             Manage your blog content.
           </p>
         </div>
-        <Button onClick={openCreate} className="w-full sm:w-auto">
-          <HiPlus /> New Post
-        </Button>
+        {canCreate ? (
+          <Button onClick={openCreate} className="w-full sm:w-auto">
+            <HiPlus /> New Post
+          </Button>
+        ) : null}
       </div>
 
       {posts.length === 0 ? (
@@ -184,18 +191,22 @@ function AdminBlogContent() {
                     {post.status}
                   </Badge>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openEdit(post)}
-                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
-                    >
-                      <HiPencil />
-                    </button>
-                    <button
-                      onClick={() => requestDelete(post)}
-                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                    >
-                      <HiTrash />
-                    </button>
+                    {canUpdate ? (
+                      <button
+                        onClick={() => openEdit(post)}
+                        className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                      >
+                        <HiPencil />
+                      </button>
+                    ) : null}
+                    {canDelete ? (
+                      <button
+                        onClick={() => requestDelete(post)}
+                        className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      >
+                        <HiTrash />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -242,18 +253,22 @@ function AdminBlogContent() {
                     </td>
                     <td className="py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEdit(post)}
-                          className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
-                        >
-                          <HiPencil />
-                        </button>
-                        <button
-                          onClick={() => requestDelete(post)}
-                          className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                        >
-                          <HiTrash />
-                        </button>
+                        {canUpdate ? (
+                          <button
+                            onClick={() => openEdit(post)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                          >
+                            <HiPencil />
+                          </button>
+                        ) : null}
+                        {canDelete ? (
+                          <button
+                            onClick={() => requestDelete(post)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <HiTrash />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

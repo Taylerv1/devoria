@@ -5,29 +5,47 @@ import { useRouter } from "next/navigation";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { getAdminHomeRoute } from "@/lib/admin-routes";
 import AdminNotFound from "@/components/admin/AdminNotFound";
+import {
+  AdminPermissionAction,
+  AdminPermissionResource,
+  hasPermission,
+} from "@/lib/admin-permissions";
 
-const VALID_ROLES: readonly UserRole[] = ["admin", "editor", "blog_manager"];
+interface RequiredPermission {
+  resource: AdminPermissionResource;
+  action?: AdminPermissionAction;
+}
 
 interface AdminGuardProps {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
+  requiredPermission?: RequiredPermission;
   unauthorizedMode?: "redirect" | "not-found";
 }
 
 export default function AdminGuard({
   children,
-  allowedRoles = [...VALID_ROLES],
+  allowedRoles,
+  requiredPermission,
   unauthorizedMode = "redirect",
 }: AdminGuardProps) {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
 
+  const passesRoleCheck = allowedRoles
+    ? !!profile && allowedRoles.includes(profile.role)
+    : true;
+  const passesPermissionCheck = requiredPermission
+    ? !!profile &&
+      (profile.role === "admin" ||
+        hasPermission(
+          profile.permissions,
+          requiredPermission.resource,
+          requiredPermission.action ?? "read"
+        ))
+    : true;
   const isAuthorized =
-    !loading &&
-    user !== null &&
-    profile !== null &&
-    (VALID_ROLES as readonly string[]).includes(profile.role) &&
-    (allowedRoles as string[]).includes(profile.role);
+    !loading && user !== null && profile !== null && passesRoleCheck && passesPermissionCheck;
 
   useEffect(() => {
     if (loading) return;
@@ -37,18 +55,18 @@ export default function AdminGuard({
       return;
     }
 
-    if (!(VALID_ROLES as readonly string[]).includes(profile.role)) {
-      router.replace("/admin/login");
-      return;
+    if (unauthorizedMode === "redirect" && !(passesRoleCheck && passesPermissionCheck)) {
+      router.replace(getAdminHomeRoute(profile));
     }
-
-    if (
-      unauthorizedMode === "redirect" &&
-      !(allowedRoles as string[]).includes(profile.role)
-    ) {
-      router.replace(getAdminHomeRoute(profile.role));
-    }
-  }, [user, profile, loading, router, allowedRoles, unauthorizedMode]);
+  }, [
+    user,
+    profile,
+    loading,
+    router,
+    unauthorizedMode,
+    passesRoleCheck,
+    passesPermissionCheck,
+  ]);
 
   if (loading) {
     return (
@@ -59,13 +77,7 @@ export default function AdminGuard({
   }
 
   if (!isAuthorized) {
-    if (
-      unauthorizedMode === "not-found" &&
-      !loading &&
-      user !== null &&
-      profile !== null &&
-      (VALID_ROLES as readonly string[]).includes(profile.role)
-    ) {
+    if (unauthorizedMode === "not-found" && !loading && user !== null && profile !== null) {
       return <AdminNotFound variant="unauthorized" />;
     }
 

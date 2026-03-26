@@ -7,7 +7,11 @@ import { getDocument } from "@/firebase/firestore";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { getAdminHomeRoute } from "@/lib/admin-routes";
-import { UserRole } from "@/context/AuthContext";
+import {
+  hasAnyAdminAccess,
+  isSystemRoleId,
+  resolveRoleDefinition,
+} from "@/lib/admin-permissions";
 import devoriaLogo from "../../../../devoriaLogo.png";
 
 export default function AdminLoginPage() {
@@ -40,14 +44,32 @@ export default function AdminLoginPage() {
       const profile = (await getDocument(
         "users",
         credential.user.uid
-      )) as { role?: UserRole } | null;
-      const role = profile?.role;
-      const defaultRoute = getAdminHomeRoute(role);
+      )) as { role?: string } | null;
+      const roleId = typeof profile?.role === "string" ? profile.role.trim() : "";
+      const roleDoc = roleId && !isSystemRoleId(roleId)
+        ? await getDocument("roles", roleId)
+        : null;
+      const roleDefinition = roleId
+        ? resolveRoleDefinition(roleId, roleDoc)
+        : null;
+
+      if (
+        !roleDefinition ||
+        !hasAnyAdminAccess({
+          role: roleId,
+          permissions: roleDefinition.permissions,
+        })
+      ) {
+        throw new Error("session_failed");
+      }
+
+      const defaultRoute = getAdminHomeRoute({
+        role: roleId,
+        permissions: roleDefinition.permissions,
+      });
       const from = new URLSearchParams(window.location.search).get("from");
       const targetRoute =
-        role === "blog_manager" && (!from || from === "/admin/dashboard")
-          ? defaultRoute
-          : from || defaultRoute;
+        from && from !== "/admin/dashboard" ? from : defaultRoute;
 
       window.location.href = targetRoute;
     } catch (err: unknown) {

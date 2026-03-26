@@ -18,6 +18,7 @@ import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import AdminGuard from "@/components/admin/AdminGuard";
 import ImageUpload from "@/components/admin/ImageUpload";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { slugify } from "@/utils";
 
@@ -33,16 +34,17 @@ const CATEGORY_OPTIONS = [
 
 export default function AdminProjectsPage() {
   return (
-    <AdminGuard
-      allowedRoles={["admin", "editor"]}
-      unauthorizedMode="not-found"
-    >
+    <AdminGuard requiredPermission={{ resource: "projects" }} unauthorizedMode="not-found">
       <AdminProjectsContent />
     </AdminGuard>
   );
 }
 
 function AdminProjectsContent() {
+  const access = useAdminAccess();
+  const canCreate = access.can("projects", "create");
+  const canUpdate = access.can("projects", "update");
+  const canDelete = access.can("projects", "delete");
   const {
     data: projects,
     loading,
@@ -58,6 +60,7 @@ function AdminProjectsContent() {
   const [deleting, setDeleting] = useState(false);
 
   function openCreate() {
+    if (!canCreate) return;
     setEditing(null);
     setCoverImage("");
     setImages([]);
@@ -65,6 +68,7 @@ function AdminProjectsContent() {
   }
 
   function openEdit(project: Project) {
+    if (!canUpdate) return;
     setEditing(project);
     setCoverImage(project.coverImage || "");
     setImages(project.images || []);
@@ -73,6 +77,7 @@ function AdminProjectsContent() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if ((editing && !canUpdate) || (!editing && !canCreate)) return;
     setSaving(true);
 
     const form = new FormData(e.currentTarget);
@@ -135,7 +140,7 @@ function AdminProjectsContent() {
   }
 
   async function handleDelete() {
-    if (!deletingProject) return;
+    if (!deletingProject || !canDelete) return;
     setDeleting(true);
     try {
       await deleteDocument("projects", deletingProject.id);
@@ -165,9 +170,11 @@ function AdminProjectsContent() {
             Manage your portfolio projects.
           </p>
         </div>
-        <Button onClick={openCreate} className="w-full sm:w-auto">
-          <HiPlus /> Add Project
-        </Button>
+        {canCreate ? (
+          <Button onClick={openCreate} className="w-full sm:w-auto">
+            <HiPlus /> Add Project
+          </Button>
+        ) : null}
       </div>
 
       {projects.length === 0 ? (
@@ -205,18 +212,22 @@ function AdminProjectsContent() {
                     {project.status}
                   </Badge>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openEdit(project)}
-                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
-                    >
-                      <HiPencil />
-                    </button>
-                    <button
-                      onClick={() => requestDelete(project)}
-                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                    >
-                      <HiTrash />
-                    </button>
+                    {canUpdate ? (
+                      <button
+                        onClick={() => openEdit(project)}
+                        className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                      >
+                        <HiPencil />
+                      </button>
+                    ) : null}
+                    {canDelete ? (
+                      <button
+                        onClick={() => requestDelete(project)}
+                        className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      >
+                        <HiTrash />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -263,18 +274,22 @@ function AdminProjectsContent() {
                     </td>
                     <td className="py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEdit(project)}
-                          className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
-                        >
-                          <HiPencil />
-                        </button>
-                        <button
-                          onClick={() => requestDelete(project)}
-                          className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                        >
-                          <HiTrash />
-                        </button>
+                        {canUpdate ? (
+                          <button
+                            onClick={() => openEdit(project)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                          >
+                            <HiPencil />
+                          </button>
+                        ) : null}
+                        {canDelete ? (
+                          <button
+                            onClick={() => requestDelete(project)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <HiTrash />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

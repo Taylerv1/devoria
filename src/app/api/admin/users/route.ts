@@ -7,36 +7,40 @@ import {
   getFirebaseAdminAuth,
   getFirebaseAdminDb,
 } from "@/lib/firebase-admin";
+import {
+  AdminRoleDefinition,
+  SYSTEM_ROLE_DEFINITIONS,
+  humanizeRoleId,
+  isSystemRoleId,
+  resolveRoleDefinition,
+} from "@/lib/admin-permissions";
 
 export const runtime = "nodejs";
-
-const VALID_ROLES = ["admin", "editor", "blog_manager"] as const;
-
-type UserRole = (typeof VALID_ROLES)[number];
 
 interface ApiUser {
   id: string;
   email: string;
   displayName: string | null;
-  role: UserRole;
-}
-
-function isUserRole(value: unknown): value is UserRole {
-  return (
-    typeof value === "string" &&
-    (VALID_ROLES as readonly string[]).includes(value)
-  );
+  role: string;
+  roleName: string;
 }
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ error }, { status });
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function toApiUser(
   id: string,
-  data: Record<string, unknown> | undefined
+  data: Record<string, unknown> | undefined,
+  roleNameMap: Map<string, string>
 ): ApiUser | null {
-  if (!data || !isUserRole(data.role)) {
+  const roleId = typeof data?.role === "string" ? data.role.trim() : "";
+
+  if (!data || !roleId) {
     return null;
   }
 
@@ -45,7 +49,8 @@ function toApiUser(
     email: typeof data.email === "string" ? data.email : "",
     displayName:
       typeof data.displayName === "string" ? data.displayName : null,
-    role: data.role,
+    role: roleId,
+    roleName: roleNameMap.get(roleId) ?? humanizeRoleId(roleId),
   };
 }
 
@@ -60,16 +65,55 @@ async function requireAdmin() {
   const payload = await verifyFirebaseToken(sessionToken);
   const db = getFirebaseAdminDb();
   const currentUserSnapshot = await db.collection("users").doc(payload.uid).get();
-  const currentUser = toApiUser(
-    currentUserSnapshot.id,
-    currentUserSnapshot.data() as Record<string, unknown> | undefined
-  );
+  const currentRole = currentUserSnapshot.data()?.role;
 
-  if (!currentUser || currentUser.role !== "admin") {
+  if (currentRole !== "admin") {
     return { response: jsonError("Only admins can manage users", 403) };
   }
 
-  return { db, currentUser };
+  return {
+    db,
+    currentUserId: payload.uid,
+  };
+}
+
+async function getRoleNameMap(db: ReturnType<typeof getFirebaseAdminDb>) {
+  const map = new Map<string, string>();
+
+  Object.values(SYSTEM_ROLE_DEFINITIONS).forEach((role) => {
+    map.set(role.id, role.name);
+  });
+
+  const snapshot = await db.collection("roles").get();
+  snapshot.docs.forEach((doc) => {
+    const role = resolveRoleDefinition(doc.id, doc.data());
+    if (role) {
+      map.set(role.id, role.name);
+    }
+  });
+
+  return map;
+}
+
+async function getRoleDefinitionById(
+  db: ReturnType<typeof getFirebaseAdminDb>,
+  roleId: string
+): Promise<AdminRoleDefinition | null> {
+  if (!roleId) {
+    return null;
+  }
+
+  if (isSystemRoleId(roleId)) {
+    return resolveRoleDefinition(roleId, SYSTEM_ROLE_DEFINITIONS[roleId]);
+  }
+
+  const snapshot = await db.collection("roles").doc(roleId).get();
+
+  if (!snapshot.exists) {
+    return null;
+  }
+
+  return resolveRoleDefinition(roleId, snapshot.data());
 }
 
 export async function GET() {
@@ -79,14 +123,18 @@ export async function GET() {
       return adminCheck.response;
     }
 
-    const snapshot = await adminCheck.db
-      .collection("users")
-      .orderBy("createdAt", "desc")
-      .get();
+    const [usersSnapshot, roleNameMap] = await Promise.all([
+      adminCheck.db.collection("users").orderBy("createdAt", "desc").get(),
+      getRoleNameMap(adminCheck.db),
+    ]);
 
-    const users = snapshot.docs
+    const users = usersSnapshot.docs
       .map((doc) =>
-        toApiUser(doc.id, doc.data() as Record<string, unknown> | undefined)
+        toApiUser(
+          doc.id,
+          doc.data() as Record<string, unknown> | undefined,
+          roleNameMap
+        )
       )
       .filter((user): user is ApiUser => user !== null);
 
@@ -106,50 +154,45 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, password, role, displayName } = body;
-    const normalizedEmail = typeof email === "string" ? email.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    const password = typeof body.password === "string" ? body.password : "";
+    const roleId = typeof body.role === "string" ? body.role.trim() : "";
+    const roleDefinition = await getRoleDefinitionById(adminCheck.db, roleId);
 
-    if (
-      !normalizedEmail ||
-      typeof password !== "string" ||
-      password.length < 6 ||
-      !isUserRole(role)
-    ) {
+    if (!email || password.length < 6 || !roleDefinition) {
       return jsonError(
-        "Invalid input. Email, password (min 6 chars), and valid role required.",
+        "Invalid input. Email, password (min 6 chars), and a valid role are required.",
         400
       );
     }
 
     const normalizedDisplayName =
-      typeof displayName === "string" && displayName.trim().length > 0
-        ? displayName.trim()
+      typeof body.displayName === "string" && body.displayName.trim().length > 0
+        ? body.displayName.trim()
         : null;
 
     const userRecord = await getFirebaseAdminAuth().createUser({
-      email: normalizedEmail,
+      email,
       password,
       displayName: normalizedDisplayName,
     });
 
-    await adminCheck.db
-      .collection("users")
-      .doc(userRecord.uid)
-      .set({
-        email: userRecord.email ?? normalizedEmail,
-        role,
-        displayName: normalizedDisplayName,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
+    await adminCheck.db.collection("users").doc(userRecord.uid).set({
+      email: userRecord.email ?? email,
+      role: roleId,
+      displayName: normalizedDisplayName,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
 
     return NextResponse.json(
       {
         success: true,
         user: {
           id: userRecord.uid,
-          email: userRecord.email ?? normalizedEmail,
-          role,
+          email: userRecord.email ?? email,
+          role: roleId,
+          roleName: roleDefinition.name,
           displayName: normalizedDisplayName,
         },
       },
@@ -175,21 +218,20 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { uid, role, displayName, password } = body;
+    const uid = typeof body.uid === "string" ? body.uid.trim() : "";
+    const roleId = typeof body.role === "string" ? body.role.trim() : "";
+    const roleDefinition = await getRoleDefinitionById(adminCheck.db, roleId);
+    const password = typeof body.password === "string" ? body.password : "";
 
-    if (typeof uid !== "string" || !uid || !isUserRole(role)) {
+    if (!uid || !roleDefinition) {
       return jsonError("User ID and a valid role are required.", 400);
     }
 
-    if (
-      typeof password === "string" &&
-      password.length > 0 &&
-      password.length < 6
-    ) {
+    if (password.length > 0 && password.length < 6) {
       return jsonError("Password must be at least 6 characters.", 400);
     }
 
-    if (uid === adminCheck.currentUser.id && role !== "admin") {
+    if (uid === adminCheck.currentUserId && roleId !== "admin") {
       return jsonError("You cannot remove the admin role from your own account.", 400);
     }
 
@@ -200,18 +242,9 @@ export async function PATCH(request: NextRequest) {
       return jsonError("User not found", 404);
     }
 
-    const existingUser = toApiUser(
-      existingSnapshot.id,
-      existingSnapshot.data() as Record<string, unknown> | undefined
-    );
-
-    if (!existingUser) {
-      return jsonError("User profile is invalid", 400);
-    }
-
     const normalizedDisplayName =
-      typeof displayName === "string" && displayName.trim().length > 0
-        ? displayName.trim()
+      typeof body.displayName === "string" && body.displayName.trim().length > 0
+        ? body.displayName.trim()
         : null;
 
     const updatePayload: {
@@ -221,24 +254,28 @@ export async function PATCH(request: NextRequest) {
       displayName: normalizedDisplayName,
     };
 
-    if (typeof password === "string" && password.length >= 6) {
+    if (password.length >= 6) {
       updatePayload.password = password;
     }
 
     await getFirebaseAdminAuth().updateUser(uid, updatePayload);
-
     await userRef.update({
-      role,
+      role: roleId,
       displayName: normalizedDisplayName,
       updatedAt: FieldValue.serverTimestamp(),
     });
 
+    const existingData = existingSnapshot.data();
+
     return NextResponse.json({
       success: true,
       user: {
-        ...existingUser,
-        role,
+        id: uid,
+        email:
+          typeof existingData?.email === "string" ? existingData.email : "",
         displayName: normalizedDisplayName,
+        role: roleId,
+        roleName: roleDefinition.name,
       },
     });
   } catch (err: unknown) {
@@ -256,13 +293,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { uid } = body;
+    const uid = typeof body.uid === "string" ? body.uid.trim() : "";
 
-    if (typeof uid !== "string" || !uid) {
+    if (!uid) {
       return jsonError("User ID is required.", 400);
     }
 
-    if (uid === adminCheck.currentUser.id) {
+    if (uid === adminCheck.currentUserId) {
       return jsonError("You cannot delete your own admin account.", 400);
     }
 
@@ -279,7 +316,7 @@ export async function DELETE(request: NextRequest) {
     try {
       await getFirebaseAdminAuth().deleteUser(uid);
     } catch (authError) {
-      if (previousData) {
+      if (isRecord(previousData)) {
         await userRef.set(previousData);
       }
       throw authError;

@@ -18,6 +18,7 @@ import AdminModal from "@/components/admin/AdminModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import AdminGuard from "@/components/admin/AdminGuard";
 import ImageUpload from "@/components/admin/ImageUpload";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { cn } from "@/utils";
 import { IconType } from "react-icons";
 import {
@@ -154,16 +155,17 @@ function IconSelect({
 
 export default function AdminServicesPage() {
   return (
-    <AdminGuard
-      allowedRoles={["admin", "editor"]}
-      unauthorizedMode="not-found"
-    >
+    <AdminGuard requiredPermission={{ resource: "services" }} unauthorizedMode="not-found">
       <AdminServicesContent />
     </AdminGuard>
   );
 }
 
 function AdminServicesContent() {
+  const access = useAdminAccess();
+  const canCreate = access.can("services", "create");
+  const canUpdate = access.can("services", "update");
+  const canDelete = access.can("services", "delete");
   const {
     data: services,
     loading,
@@ -179,6 +181,7 @@ function AdminServicesContent() {
   const [deleting, setDeleting] = useState(false);
 
   function openCreate() {
+    if (!canCreate) return;
     setEditing(null);
     setImage("");
     setSelectedIcon(ICON_OPTIONS[0].value);
@@ -186,6 +189,7 @@ function AdminServicesContent() {
   }
 
   function openEdit(service: Service) {
+    if (!canUpdate) return;
     setEditing(service);
     setImage(service.image || "");
     setSelectedIcon(service.icon || ICON_OPTIONS[0].value);
@@ -194,6 +198,7 @@ function AdminServicesContent() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if ((editing && !canUpdate) || (!editing && !canCreate)) return;
     setSaving(true);
 
     const form = new FormData(e.currentTarget);
@@ -234,7 +239,7 @@ function AdminServicesContent() {
   }
 
   async function handleDelete() {
-    if (!deletingService) return;
+    if (!deletingService || !canDelete) return;
     setDeleting(true);
     try {
       await deleteDocument("services", deletingService.id);
@@ -264,9 +269,11 @@ function AdminServicesContent() {
             Manage your service offerings.
           </p>
         </div>
-        <Button onClick={openCreate} className="w-full sm:w-auto">
-          <HiPlus /> Add Service
-        </Button>
+        {canCreate ? (
+          <Button onClick={openCreate} className="w-full sm:w-auto">
+            <HiPlus /> Add Service
+          </Button>
+        ) : null}
       </div>
 
       {services.length === 0 ? (
@@ -299,18 +306,22 @@ function AdminServicesContent() {
                     {service.status}
                   </Badge>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openEdit(service)}
-                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
-                    >
-                      <HiPencil />
-                    </button>
-                    <button
-                      onClick={() => requestDelete(service)}
-                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                    >
-                      <HiTrash />
-                    </button>
+                    {canUpdate ? (
+                      <button
+                        onClick={() => openEdit(service)}
+                        className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                      >
+                        <HiPencil />
+                      </button>
+                    ) : null}
+                    {canDelete ? (
+                      <button
+                        onClick={() => requestDelete(service)}
+                        className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      >
+                        <HiTrash />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -350,18 +361,22 @@ function AdminServicesContent() {
                     </td>
                     <td className="py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEdit(service)}
-                          className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
-                        >
-                          <HiPencil />
-                        </button>
-                        <button
-                          onClick={() => requestDelete(service)}
-                          className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
-                        >
-                          <HiTrash />
-                        </button>
+                        {canUpdate ? (
+                          <button
+                            onClick={() => openEdit(service)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                          >
+                            <HiPencil />
+                          </button>
+                        ) : null}
+                        {canDelete ? (
+                          <button
+                            onClick={() => requestDelete(service)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <HiTrash />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

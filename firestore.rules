@@ -3,101 +3,112 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // =========================================================================
-    // Helper functions
-    // =========================================================================
-
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    function currentUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     function userRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return isAuthenticated() ? currentUserDoc().role : null;
     }
 
     function isAdmin() {
       return isAuthenticated() && userRole() == 'admin';
     }
 
-    function isEditor() {
-      return isAuthenticated() && userRole() in ['admin', 'editor'];
+    function hasEditorPermission(resource, action) {
+      return userRole() == 'editor' && (
+        (resource == 'dashboard' && action == 'read') ||
+        (resource == 'content' && (action == 'read' || action == 'update')) ||
+        (resource == 'projects' && (action == 'read' || action == 'create' || action == 'update' || action == 'delete')) ||
+        (resource == 'services' && (action == 'read' || action == 'create' || action == 'update' || action == 'delete')) ||
+        (resource == 'messages' && (action == 'read' || action == 'update' || action == 'delete'))
+      );
     }
 
-    function isBlogManager() {
-      return isAuthenticated() && userRole() in ['admin', 'blog_manager'];
+    function hasBlogManagerPermission(resource, action) {
+      return userRole() == 'blog_manager' && (
+        (resource == 'blog' && (action == 'read' || action == 'create' || action == 'update' || action == 'delete')) ||
+        (resource == 'news' && (action == 'read' || action == 'create' || action == 'update' || action == 'delete'))
+      );
     }
 
-    // =========================================================================
-    // users/{uid}
-    // Admins can read all users. Others can only read their own profile.
-    // No client writes - use Firebase Admin SDK only.
-    // =========================================================================
+    function hasBuiltInPermission(resource, action) {
+      return isAdmin() || hasEditorPermission(resource, action) || hasBlogManagerPermission(resource, action);
+    }
+
+    function customRolePermissions() {
+      return get(/databases/$(database)/documents/roles/$(userRole())).data.permissions;
+    }
+
+    function hasCustomPermission(resource, action) {
+      return isAuthenticated() &&
+        userRole() != null &&
+        !hasBuiltInPermission(resource, action) &&
+        exists(/databases/$(database)/documents/roles/$(userRole())) &&
+        customRolePermissions()[resource] != null &&
+        customRolePermissions()[resource][action] == true;
+    }
+
+    function hasPermission(resource, action) {
+      return isAuthenticated() && (hasBuiltInPermission(resource, action) || hasCustomPermission(resource, action));
+    }
+
     match /users/{uid} {
       allow read: if isAuthenticated() && (request.auth.uid == uid || isAdmin());
       allow write: if false;
     }
 
-    // =========================================================================
-    // messages
-    // Client writes are blocked. Public forms submit through the server API.
-    // Editors and above can read or manage messages.
-    // =========================================================================
+    match /roles/{roleId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /messages/{messageId} {
       allow create: if false;
-      allow read, delete, update: if isEditor();
+      allow read: if hasPermission('messages', 'read');
+      allow update: if hasPermission('messages', 'update');
+      allow delete: if hasPermission('messages', 'delete');
     }
 
-    // =========================================================================
-    // projects
-    // Public read. Editors and above can write.
-    // =========================================================================
     match /projects/{docId} {
       allow read: if true;
-      allow create, update, delete: if isEditor();
+      allow create: if hasPermission('projects', 'create');
+      allow update: if hasPermission('projects', 'update');
+      allow delete: if hasPermission('projects', 'delete');
     }
 
-    // =========================================================================
-    // services
-    // Public read. Editors and above can write.
-    // =========================================================================
     match /services/{docId} {
       allow read: if true;
-      allow create, update, delete: if isEditor();
+      allow create: if hasPermission('services', 'create');
+      allow update: if hasPermission('services', 'update');
+      allow delete: if hasPermission('services', 'delete');
     }
 
-    // =========================================================================
-    // site_content
-    // Public read. Editors and above can manage page content.
-    // =========================================================================
     match /site_content/{docId} {
       allow read: if true;
-      allow create, update, delete: if isEditor();
+      allow create, update, delete: if hasPermission('content', 'update');
     }
 
-    // =========================================================================
-    // blog
-    // Public read. Blog managers and admins can write.
-    // =========================================================================
     match /blog/{docId} {
       allow read: if true;
-      allow create, update, delete: if isBlogManager();
+      allow create: if hasPermission('blog', 'create');
+      allow update: if hasPermission('blog', 'update');
+      allow delete: if hasPermission('blog', 'delete');
     }
 
-    // =========================================================================
-    // news
-    // Public read. Blog managers and admins can write.
-    // =========================================================================
     match /news/{docId} {
       allow read: if true;
-      allow create, update, delete: if isBlogManager();
+      allow create: if hasPermission('news', 'create');
+      allow update: if hasPermission('news', 'update');
+      allow delete: if hasPermission('news', 'delete');
     }
 
-    // =========================================================================
-    // Default deny - anything not explicitly allowed above is blocked.
-    // =========================================================================
     match /{document=**} {
       allow read, write: if false;
     }
-
   }
 }

@@ -19,7 +19,7 @@ export default function AdminPage() {
       return;
     }
 
-    router.replace(getAdminHomeRoute(profile.role));
+    router.replace(getAdminHomeRoute(profile));
   }, [loading, profile, router]);
 
   return (

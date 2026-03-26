@@ -4,11 +4,11 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import AdminGuard from "@/components/admin/AdminGuard";
 import ImageUpload from "@/components/admin/ImageUpload";
 import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import { getDocument, setDocument } from "@/firebase/firestore";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import {
   ABOUT_VALUE_ICON_OPTIONS,
   EMPTY_ABOUT_VALUE,
@@ -174,16 +174,15 @@ function SelectField({
 
 export default function AdminContentPage() {
   return (
-    <AdminGuard
-      allowedRoles={["admin", "editor"]}
-      unauthorizedMode="not-found"
-    >
+    <AdminGuard requiredPermission={{ resource: "content" }} unauthorizedMode="not-found">
       <AdminContentManager />
     </AdminGuard>
   );
 }
 
 function AdminContentManager() {
+  const access = useAdminAccess();
+  const canUpdate = access.can("content", "update");
   const [homeContent, setHomeContent] = useState<HomePageContent>(
     createDefaultHomePageContent()
   );
@@ -297,6 +296,7 @@ function AdminContentManager() {
 
   async function handleHomeSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canUpdate) return;
     setSavingHome(true);
     setNotice(null);
 
@@ -323,6 +323,7 @@ function AdminContentManager() {
 
   async function handleAboutSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canUpdate) return;
     setSavingAbout(true);
     setNotice(null);
 
@@ -349,6 +350,7 @@ function AdminContentManager() {
 
   async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canUpdate) return;
     setSavingContact(true);
     setNotice(null);
 
@@ -413,7 +415,7 @@ function AdminContentManager() {
                 Hero copy, stats, section intros, and the closing CTA.
               </p>
             </div>
-            <Button type="submit" disabled={savingHome}>
+            <Button type="submit" disabled={savingHome || !canUpdate}>
               {savingHome ? "Saving..." : "Save Home Page"}
             </Button>
           </div>
@@ -816,7 +818,7 @@ function AdminContentManager() {
                 Page header, story, company values, and team members.
               </p>
             </div>
-            <Button type="submit" disabled={savingAbout}>
+            <Button type="submit" disabled={savingAbout || !canUpdate}>
               {savingAbout ? "Saving..." : "Save About Page"}
             </Button>
           </div>
@@ -1086,7 +1088,7 @@ function AdminContentManager() {
                 Shared contact details used in the Contact page cards and footer.
               </p>
             </div>
-            <Button type="submit" disabled={savingContact}>
+            <Button type="submit" disabled={savingContact || !canUpdate}>
               {savingContact ? "Saving..." : "Save Contact Content"}
             </Button>
           </div>

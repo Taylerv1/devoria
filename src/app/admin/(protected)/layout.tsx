@@ -17,7 +17,7 @@ export default function ProtectedAdminLayout({
   const pathname = usePathname();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { profile } = useAuth();
-  const routeState = getAdminRouteState(pathname, profile?.role);
+  const routeState = getAdminRouteState(pathname, profile);
 
   useEffect(() => {
     setMobileSidebarOpen(false);

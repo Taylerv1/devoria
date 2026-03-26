@@ -1,11 +1,13 @@
 "use client";
 
+import { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/utils";
 import { signOut } from "@/firebase/auth";
-import { useAuth, UserRole } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
+import { ADMIN_ROUTE_DEFINITIONS, canAccessAdminRoute } from "@/lib/admin-permissions";
 import devoriaLogo from "../../../devoriaLogo.png";
 import {
   HiViewGrid,
@@ -21,21 +23,16 @@ import {
   HiX,
 } from "react-icons/hi";
 
-const links: {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-  roles: UserRole[];
-}[] = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: <HiViewGrid />, roles: ["admin", "editor"] },
-  { href: "/admin/content", label: "Pages", icon: <HiPencil />, roles: ["admin", "editor"] },
-  { href: "/admin/projects", label: "Projects", icon: <HiFolder />, roles: ["admin", "editor"] },
-  { href: "/admin/blog", label: "Blog", icon: <HiDocumentText />, roles: ["admin", "blog_manager"] },
-  { href: "/admin/news", label: "News", icon: <HiNewspaper />, roles: ["admin", "blog_manager"] },
-  { href: "/admin/services", label: "Services", icon: <HiBriefcase />, roles: ["admin", "editor"] },
-  { href: "/admin/messages", label: "Messages", icon: <HiMail />, roles: ["admin", "editor"] },
-  { href: "/admin/users", label: "Users", icon: <HiUsers />, roles: ["admin"] },
-];
+const LINK_ICONS: Record<string, ReactNode> = {
+  "/admin/dashboard": <HiViewGrid />,
+  "/admin/content": <HiPencil />,
+  "/admin/projects": <HiFolder />,
+  "/admin/blog": <HiDocumentText />,
+  "/admin/news": <HiNewspaper />,
+  "/admin/services": <HiBriefcase />,
+  "/admin/messages": <HiMail />,
+  "/admin/users": <HiUsers />,
+};
 
 interface AdminSidebarProps {
   mobileOpen: boolean;
@@ -56,7 +53,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps)
   }
 
   const visibleLinks = profile
-    ? links.filter((l) => (l.roles as string[]).includes(profile.role))
+    ? ADMIN_ROUTE_DEFINITIONS.filter((link) => canAccessAdminRoute(profile, link.href))
     : [];
 
   return (
@@ -110,7 +107,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps)
                   : "text-[var(--color-text-muted)] hover:bg-white/5 hover:text-white"
               )}
             >
-              <span className="text-lg">{link.icon}</span>
+              <span className="text-lg">{LINK_ICONS[link.href]}</span>
               {link.label}
             </Link>
           ))}
@@ -120,7 +117,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps)
           {profile && (
             <div className="mb-1 px-4 py-2">
               <p className="truncate text-xs text-[var(--color-text-muted)]">{profile.email}</p>
-              <p className="text-xs font-medium capitalize text-[var(--color-primary-light)]">{profile.role}</p>
+              <p className="text-xs font-medium text-[var(--color-primary-light)]">{profile.roleName}</p>
             </div>
           )}
           <Link

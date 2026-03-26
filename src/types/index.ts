@@ -75,7 +75,7 @@ export interface UserProfile {
   id: string;
   email: string;
   displayName?: string | null;
-  role: "admin" | "editor" | "blog_manager";
+  role: string;
   photoURL?: string;
   createdAt: Timestamp;
 }

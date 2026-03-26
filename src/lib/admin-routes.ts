@@ -1,38 +1,27 @@
-import { UserRole } from "@/context/AuthContext";
+import {
+  AdminAccessProfile,
+  ADMIN_ROUTE_DEFINITIONS,
+  canAccessAdminRoute,
+  getDefaultAdminRoute,
+} from "@/lib/admin-permissions";
 
-export const ADMIN_ROUTE_ACCESS: Array<{
-  href: string;
-  roles: UserRole[];
-}> = [
-  { href: "/admin/dashboard", roles: ["admin", "editor"] },
-  { href: "/admin/content", roles: ["admin", "editor"] },
-  { href: "/admin/projects", roles: ["admin", "editor"] },
-  { href: "/admin/services", roles: ["admin", "editor"] },
-  { href: "/admin/messages", roles: ["admin", "editor"] },
-  { href: "/admin/blog", roles: ["admin", "blog_manager"] },
-  { href: "/admin/news", roles: ["admin", "blog_manager"] },
-  { href: "/admin/users", roles: ["admin"] },
-];
+export const ADMIN_ROUTE_ACCESS = ADMIN_ROUTE_DEFINITIONS;
 
-export function getAdminHomeRoute(role?: UserRole | null) {
-  if (role === "blog_manager") {
-    return "/admin/blog";
-  }
-
-  return "/admin/dashboard";
+export function getAdminHomeRoute(profile?: AdminAccessProfile | null) {
+  return getDefaultAdminRoute(profile);
 }
 
 export function getAdminRouteState(
   pathname: string,
-  role?: UserRole | null
+  profile?: AdminAccessProfile | null
 ): "allowed" | "unauthorized" | "missing" {
-  const route = ADMIN_ROUTE_ACCESS.find((entry) => entry.href === pathname);
+  const route = ADMIN_ROUTE_DEFINITIONS.find((entry) => entry.href === pathname);
 
   if (!route) {
     return "missing";
   }
 
-  if (!role || !(route.roles as string[]).includes(role)) {
+  if (!canAccessAdminRoute(profile, pathname)) {
     return "unauthorized";
   }
 

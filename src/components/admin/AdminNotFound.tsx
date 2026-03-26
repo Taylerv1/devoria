@@ -50,7 +50,7 @@ export default function AdminNotFound({
   variant = "missing",
 }: AdminNotFoundProps) {
   const { profile } = useAuth();
-  const homeRoute = getAdminHomeRoute(profile?.role);
+  const homeRoute = getAdminHomeRoute(profile);
   const content = CONTENT[variant];
   const Icon = content.Icon;
 
