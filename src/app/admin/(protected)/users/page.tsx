@@ -558,13 +558,6 @@ export default function AdminUsersPage() {
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
-                  variant="outline"
-                  onClick={() => openRoleModal("add")}
-                  className="w-full sm:w-auto"
-                >
-                  <HiShieldCheck className="mr-1.5 inline" /> Create Role
-                </Button>
-                <Button
                   onClick={() => {
                     setShowAddPassword(false);
                     setSelectedAddRole("editor");
