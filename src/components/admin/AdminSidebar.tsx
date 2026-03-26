@@ -9,6 +9,7 @@ import { useAuth, UserRole } from "@/context/AuthContext";
 import devoriaLogo from "../../../devoriaLogo.png";
 import {
   HiViewGrid,
+  HiPencil,
   HiFolder,
   HiDocumentText,
   HiNewspaper,
@@ -27,6 +28,7 @@ const links: {
   roles: UserRole[];
 }[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: <HiViewGrid />, roles: ["admin", "editor"] },
+  { href: "/admin/content", label: "Pages", icon: <HiPencil />, roles: ["admin", "editor"] },
   { href: "/admin/projects", label: "Projects", icon: <HiFolder />, roles: ["admin", "editor"] },
   { href: "/admin/blog", label: "Blog", icon: <HiDocumentText />, roles: ["admin", "blog_manager"] },
   { href: "/admin/news", label: "News", icon: <HiNewspaper />, roles: ["admin", "blog_manager"] },

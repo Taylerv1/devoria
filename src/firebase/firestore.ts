@@ -5,6 +5,7 @@ import {
   getDoc,
   addDoc,
   updateDoc,
+  setDoc,
   deleteDoc,
   query,
   where,
@@ -75,6 +76,15 @@ export async function updateDocument(
 ) {
   const docRef = doc(db, collectionName, docId);
   return updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+}
+
+export async function setDocument(
+  collectionName: string,
+  docId: string,
+  data: DocumentData
+) {
+  const docRef = doc(db, collectionName, docId);
+  return setDoc(docRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
 }
 
 export async function deleteDocument(collectionName: string, docId: string) {

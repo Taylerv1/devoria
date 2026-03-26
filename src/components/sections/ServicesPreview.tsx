@@ -7,6 +7,7 @@ import { orderBy, where } from "firebase/firestore";
 import { Service } from "@/types";
 import Section from "@/components/layout/Section";
 import Button from "@/components/ui/Button";
+import { DEFAULT_HOME_PAGE_CONTENT, HomeSectionContent } from "@/lib/site-content";
 import {
   HiArrowRight,
   HiCode,
@@ -35,7 +36,13 @@ const ICON_MAP: Record<string, ReactNode> = {
   HiGlobe: <HiGlobe className="text-xl" />,
 };
 
-export default function ServicesPreview() {
+interface ServicesPreviewProps {
+  content?: HomeSectionContent;
+}
+
+export default function ServicesPreview({
+  content = DEFAULT_HOME_PAGE_CONTENT.services,
+}: ServicesPreviewProps) {
   const { data: services, loading } = useFirestore<Service>(
     "services",
     where("status", "==", "active"),
@@ -50,16 +57,21 @@ export default function ServicesPreview() {
 
       <div className="relative z-10">
         <div className="mb-10 text-center sm:mb-12">
-          <p className="text-sm font-medium uppercase tracking-[0.28em] text-[var(--color-primary-light)]">
-            What We Do
-          </p>
-          <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl md:text-4xl">
-            Services Built for Scale
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[var(--color-text-muted)] sm:text-base">
-            Focused service tracks for product strategy, platform delivery, and
-            technical operations.
-          </p>
+          {content.eyebrow ? (
+            <p className="text-sm font-medium uppercase tracking-[0.28em] text-[var(--color-primary-light)]">
+              {content.eyebrow}
+            </p>
+          ) : null}
+          {content.title ? (
+            <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl md:text-4xl">
+              {content.title}
+            </h2>
+          ) : null}
+          {content.description ? (
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[var(--color-text-muted)] sm:text-base">
+              {content.description}
+            </p>
+          ) : null}
         </div>
 
         {loading ? (
@@ -138,13 +150,15 @@ export default function ServicesPreview() {
               })}
             </div>
 
-            <div className="mt-8 text-center">
-              <Link href="/services">
-                <Button variant="outline">
-                  View All Services <HiArrowRight />
-                </Button>
-              </Link>
-            </div>
+            {content.buttonLabel && content.buttonHref ? (
+              <div className="mt-8 text-center">
+                <Link href={content.buttonHref}>
+                  <Button variant="outline">
+                    {content.buttonLabel} <HiArrowRight />
+                  </Button>
+                </Link>
+              </div>
+            ) : null}
           </>
         )}
       </div>

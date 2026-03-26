@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import Button from "@/components/ui/Button";
 import HeroVisualFallback from "@/components/three/hero/HeroVisualFallback";
+import { DEFAULT_HOME_PAGE_CONTENT, HomeHeroContent, HomeStat } from "@/lib/site-content";
 import { HiArrowRight } from "react-icons/hi";
 
 const HeroVisual = dynamic(() => import("@/components/three/hero/HeroVisual"), {
@@ -11,7 +12,25 @@ const HeroVisual = dynamic(() => import("@/components/three/hero/HeroVisual"), {
   loading: () => <HeroVisualFallback />,
 });
 
-export default function Hero() {
+interface HeroProps {
+  content?: HomeHeroContent;
+  stats?: HomeStat[];
+}
+
+export default function Hero({
+  content = DEFAULT_HOME_PAGE_CONTENT.hero,
+  stats = DEFAULT_HOME_PAGE_CONTENT.stats,
+}: HeroProps) {
+  const hasStart = content.titleStart.trim().length > 0;
+  const hasHighlight = content.titleHighlight.trim().length > 0;
+  const hasEnd = content.titleEnd.trim().length > 0;
+  const showPrimaryAction =
+    content.primaryButtonLabel.trim().length > 0 &&
+    content.primaryButtonHref.trim().length > 0;
+  const showSecondaryAction =
+    content.secondaryButtonLabel.trim().length > 0 &&
+    content.secondaryButtonHref.trim().length > 0;
+
   return (
     <section className="relative isolate flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden bg-[var(--color-dark)] px-4 sm:px-6 lg:px-8">
       <HeroVisual />
@@ -30,54 +49,71 @@ export default function Hero() {
 
       <div className="relative z-10 mx-auto max-w-5xl py-16 text-center sm:py-20 lg:py-24">
         <div className="mx-auto max-w-4xl">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--color-dark-border)] bg-[rgba(31,33,28,0.76)] px-4 py-1.5 text-sm text-[var(--color-text-muted)] backdrop-blur-md">
-            <span className="motion-safe:animate-pulse h-2 w-2 rounded-full bg-[var(--color-accent)]" />
-            We&apos;re building the future
-          </div>
+          {content.badge ? (
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--color-dark-border)] bg-[rgba(31,33,28,0.76)] px-4 py-1.5 text-sm text-[var(--color-text-muted)] backdrop-blur-md">
+              <span className="motion-safe:animate-pulse h-2 w-2 rounded-full bg-[var(--color-accent)]" />
+              {content.badge}
+            </div>
+          ) : null}
 
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-[var(--color-text)] sm:text-5xl md:text-7xl">
-            We Build{" "}
-            <span className="bg-gradient-to-r from-[var(--color-primary-light)] to-[var(--color-accent)] bg-clip-text text-transparent">
-              Digital Products
-            </span>{" "}
-            That Matter
+            {hasStart ? content.titleStart : null}
+            {hasHighlight ? (
+              <>
+                {hasStart ? " " : null}
+                <span className="bg-gradient-to-r from-[var(--color-primary-light)] to-[var(--color-accent)] bg-clip-text text-transparent">
+                  {content.titleHighlight}
+                </span>
+              </>
+            ) : null}
+            {hasEnd ? (
+              <>
+                {hasStart || hasHighlight ? " " : null}
+                {content.titleEnd}
+              </>
+            ) : null}
           </h1>
 
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[var(--color-text-muted)] sm:mt-6 sm:text-lg md:text-xl">
-            Devoria is a modern developer studio that turns bold ideas into
-            exceptional software. From web apps to cloud infrastructure, we
-            deliver end-to-end solutions.
-          </p>
+          {content.description ? (
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[var(--color-text-muted)] sm:mt-6 sm:text-lg md:text-xl">
+              {content.description}
+            </p>
+          ) : null}
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
-            <Link href="/projects">
-              <Button size="lg">
-                View Our Work <HiArrowRight />
-              </Button>
-            </Link>
-            <Link href="/contact">
-              <Button variant="outline" size="lg">
-                Start a Project
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-14 grid grid-cols-2 gap-6 border-t border-[var(--color-dark-border)] pt-8 sm:mt-16 sm:gap-8 sm:pt-10 md:grid-cols-4">
-          {[
-            { value: "50+", label: "Projects Delivered" },
-            { value: "30+", label: "Happy Clients" },
-            { value: "5+", label: "Years Experience" },
-            { value: "99%", label: "Client Satisfaction" },
-          ].map((stat) => (
-            <div key={stat.label}>
-              <div className="text-2xl font-bold text-[var(--color-text)] sm:text-3xl">{stat.value}</div>
-              <div className="mt-1 text-xs text-[var(--color-text-muted)] sm:text-sm">
-                {stat.label}
-              </div>
+          {showPrimaryAction || showSecondaryAction ? (
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
+              {showPrimaryAction ? (
+                <Link href={content.primaryButtonHref}>
+                  <Button size="lg">
+                    {content.primaryButtonLabel} <HiArrowRight />
+                  </Button>
+                </Link>
+              ) : null}
+              {showSecondaryAction ? (
+                <Link href={content.secondaryButtonHref}>
+                  <Button variant="outline" size="lg">
+                    {content.secondaryButtonLabel}
+                  </Button>
+                </Link>
+              ) : null}
             </div>
-          ))}
+          ) : null}
         </div>
+
+        {stats.length > 0 ? (
+          <div className="mt-14 grid grid-cols-2 gap-6 border-t border-[var(--color-dark-border)] pt-8 sm:mt-16 sm:gap-8 sm:pt-10 md:grid-cols-4">
+            {stats.map((stat, index) => (
+              <div key={`${stat.label}-${index}`}>
+                <div className="text-2xl font-bold text-[var(--color-text)] sm:text-3xl">
+                  {stat.value}
+                </div>
+                <div className="mt-1 text-xs text-[var(--color-text-muted)] sm:text-sm">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );

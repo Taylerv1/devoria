@@ -8,9 +8,16 @@ import Section from "@/components/layout/Section";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import { DEFAULT_HOME_PAGE_CONTENT, HomeSectionContent } from "@/lib/site-content";
 import { HiArrowRight } from "react-icons/hi";
 
-export default function FeaturedProjects() {
+interface FeaturedProjectsProps {
+  content?: HomeSectionContent;
+}
+
+export default function FeaturedProjects({
+  content = DEFAULT_HOME_PAGE_CONTENT.projects,
+}: FeaturedProjectsProps) {
   const { data: projects, loading } = useFirestore<Project>(
     "projects",
     where("status", "==", "published"),
@@ -23,16 +30,21 @@ export default function FeaturedProjects() {
   return (
     <Section>
       <div className="mb-10 text-center sm:mb-12">
-        <p className="text-sm font-medium uppercase tracking-[0.28em] text-[var(--color-primary-light)]">
-          Our Work
-        </p>
-        <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl md:text-4xl">
-          Featured Projects
-        </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[var(--color-text-muted)] sm:text-base">
-          Selected product work across dashboards, platforms, and digital
-          experiences built for ambitious teams.
-        </p>
+        {content.eyebrow ? (
+          <p className="text-sm font-medium uppercase tracking-[0.28em] text-[var(--color-primary-light)]">
+            {content.eyebrow}
+          </p>
+        ) : null}
+        {content.title ? (
+          <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl md:text-4xl">
+            {content.title}
+          </h2>
+        ) : null}
+        {content.description ? (
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[var(--color-text-muted)] sm:text-base">
+            {content.description}
+          </p>
+        ) : null}
       </div>
 
       {loading ? (
@@ -80,13 +92,15 @@ export default function FeaturedProjects() {
         </div>
       )}
 
-      <div className="mt-10 text-center sm:mt-12">
-        <Link href="/projects">
-          <Button variant="outline">
-            View All Projects <HiArrowRight />
-          </Button>
-        </Link>
-      </div>
+      {content.buttonLabel && content.buttonHref ? (
+        <div className="mt-10 text-center sm:mt-12">
+          <Link href={content.buttonHref}>
+            <Button variant="outline">
+              {content.buttonLabel} <HiArrowRight />
+            </Button>
+          </Link>
+        </div>
+      ) : null}
     </Section>
   );
 }

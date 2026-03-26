@@ -66,6 +66,15 @@ service cloud.firestore {
     }
 
     // =========================================================================
+    // site_content
+    // Public read. Editors and above can manage page content.
+    // =========================================================================
+    match /site_content/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isEditor();
+    }
+
+    // =========================================================================
     // blog
     // Public read. Blog managers and admins can write.
     // =========================================================================

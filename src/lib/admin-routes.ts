@@ -5,6 +5,7 @@ export const ADMIN_ROUTE_ACCESS: Array<{
   roles: UserRole[];
 }> = [
   { href: "/admin/dashboard", roles: ["admin", "editor"] },
+  { href: "/admin/content", roles: ["admin", "editor"] },
   { href: "/admin/projects", roles: ["admin", "editor"] },
   { href: "/admin/services", roles: ["admin", "editor"] },
   { href: "/admin/messages", roles: ["admin", "editor"] },
