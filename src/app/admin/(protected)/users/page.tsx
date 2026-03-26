@@ -670,16 +670,6 @@ export default function AdminUsersPage() {
                 <p className="mt-2 text-sm text-[var(--color-text-muted)]">
                   Built-in roles stay fixed. Custom roles can be created and assigned to users from the role selector.
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {roles.map((role) => (
-                    <Badge
-                      key={role.id}
-                      variant={role.isSystem ? "accent" : "muted"}
-                    >
-                      {role.name}
-                    </Badge>
-                  ))}
-                </div>
               </Card>
 
               <Card hover={false}>
