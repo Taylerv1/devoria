@@ -332,15 +332,6 @@ function AdminContentManager() {
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Pages Content</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            Manage the editable content for the public Home and About pages.
-          </p>
-        </div>
-        <Badge variant="accent">Admin + Editor Access</Badge>
-      </div>
 
       {notice ? (
         <div
