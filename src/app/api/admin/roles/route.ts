@@ -151,3 +151,120 @@ export async function POST(request: NextRequest) {
     return jsonError(error.message || "Failed to create role", 500);
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const adminCheck = await requireAdmin();
+    if ("response" in adminCheck) {
+      return adminCheck.response;
+    }
+
+    const body = await request.json();
+    const roleId = typeof body.id === "string" ? body.id.trim() : "";
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const permissions = normalizePermissionMatrix(body.permissions);
+
+    if (!roleId) {
+      return jsonError("Role ID is required.", 400);
+    }
+
+    if (isSystemRoleId(roleId)) {
+      return jsonError("System roles cannot be modified.", 403);
+    }
+
+    if (name.length < 2) {
+      return jsonError("Role name must be at least 2 characters.", 400);
+    }
+
+    if (!hasAtLeastOnePermission(permissions)) {
+      return jsonError("Select at least one permission for the role.", 400);
+    }
+
+    const roleRef = adminCheck.db.collection("roles").doc(roleId);
+    const existingSnapshot = await roleRef.get();
+
+    if (!existingSnapshot.exists) {
+      return jsonError("Role not found.", 404);
+    }
+
+    const roleDefinition = resolveRoleDefinition(roleId, {
+      name,
+      permissions,
+      isSystem: false,
+    });
+
+    if (!roleDefinition || !hasAnyAdminAccess({
+      role: roleId,
+      permissions: roleDefinition.permissions,
+    })) {
+      return jsonError("The role must be able to access at least one admin page.", 400);
+    }
+
+    await roleRef.update({
+      name: roleDefinition.name,
+      permissions: roleDefinition.permissions,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      role: roleDefinition,
+    });
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    console.error("[API] Update role failed:", error);
+    return jsonError(error.message || "Failed to update role", 500);
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const adminCheck = await requireAdmin();
+    if ("response" in adminCheck) {
+      return adminCheck.response;
+    }
+
+    const body = await request.json();
+    const roleId = typeof body.id === "string" ? body.id.trim() : "";
+
+    if (!roleId) {
+      return jsonError("Role ID is required.", 400);
+    }
+
+    if (isSystemRoleId(roleId)) {
+      return jsonError("System roles cannot be deleted.", 403);
+    }
+
+    const roleRef = adminCheck.db.collection("roles").doc(roleId);
+    const existingSnapshot = await roleRef.get();
+
+    if (!existingSnapshot.exists) {
+      return jsonError("Role not found.", 404);
+    }
+
+    // Check if any users are using this role
+    const usersWithRole = await adminCheck.db
+      .collection("users")
+      .where("role", "==", roleId)
+      .limit(1)
+      .get();
+
+    if (!usersWithRole.empty) {
+      return jsonError(
+        "Cannot delete this role because it is assigned to one or more users. Reassign them first.",
+        409
+      );
+    }
+
+    await roleRef.delete();
+
+    return NextResponse.json({
+      success: true,
+      deletedId: roleId,
+    });
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    console.error("[API] Delete role failed:", error);
+    return jsonError(error.message || "Failed to delete role", 500);
+  }
+}

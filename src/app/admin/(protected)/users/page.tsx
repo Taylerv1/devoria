@@ -252,6 +252,11 @@ export default function AdminUsersPage() {
   const [rolePermissions, setRolePermissions] = useState<AdminPermissionMatrix>(
     createEmptyPermissionMatrix()
   );
+  const [editingRole, setEditingRole] = useState<AdminRoleDefinition | null>(null);
+  const [editRoleModalOpen, setEditRoleModalOpen] = useState(false);
+  const [savingRole, setSavingRole] = useState(false);
+  const [deletingRole, setDeletingRole] = useState<AdminRoleDefinition | null>(null);
+  const [deletingRoleId, setDeletingRoleId] = useState<string | null>(null);
 
   const adminCount = useMemo(
     () => users.filter((user) => user.role === "admin").length,
@@ -334,6 +339,90 @@ export default function AdminUsersPage() {
     setRoleModalTarget(target);
     resetRoleModal();
     setRoleModalOpen(true);
+  }
+
+  function openEditRoleModal(role: AdminRoleDefinition) {
+    setEditingRole(role);
+    setRoleName(role.name);
+    setRolePermissions(role.permissions);
+    setEditRoleModalOpen(true);
+  }
+
+  function closeEditRoleModal() {
+    setEditRoleModalOpen(false);
+    setEditingRole(null);
+    setRoleName("");
+    setRolePermissions(createEmptyPermissionMatrix());
+  }
+
+  async function handleUpdateRole(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingRole) return;
+
+    setSavingRole(true);
+
+    try {
+      const response = await fetch("/api/admin/roles", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingRole.id,
+          name: roleName,
+          permissions: rolePermissions,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(payload?.error || "Failed to update role");
+      }
+
+      const result = (await response.json()) as { role: AdminRoleDefinition };
+      setRoles((current) =>
+        current.map((role) => (role.id === result.role.id ? result.role : role))
+      );
+      closeEditRoleModal();
+    } catch (err) {
+      console.error("Update role failed:", err);
+      alert(err instanceof Error ? err.message : "Failed to update role");
+    } finally {
+      setSavingRole(false);
+    }
+  }
+
+  function requestDeleteRole(role: AdminRoleDefinition) {
+    setDeletingRole(role);
+  }
+
+  async function handleDeleteRole() {
+    if (!deletingRole) return;
+
+    setDeletingRoleId(deletingRole.id);
+
+    try {
+      const response = await fetch("/api/admin/roles", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deletingRole.id }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(payload?.error || "Failed to delete role");
+      }
+
+      setRoles((current) => current.filter((role) => role.id !== deletingRole.id));
+      setDeletingRole(null);
+    } catch (err) {
+      console.error("Delete role failed:", err);
+      alert(err instanceof Error ? err.message : "Failed to delete role");
+    } finally {
+      setDeletingRoleId(null);
+    }
   }
 
   function handleRolePickerChange(target: "add" | "edit", value: string) {
@@ -613,6 +702,39 @@ export default function AdminUsersPage() {
                     <HiPlus /> New Custom Role
                   </Button>
                 </div>
+
+                {customRoles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {customRoles.map((role) => (
+                      <div
+                        key={role.id}
+                        className="flex items-center justify-between rounded-xl border border-[var(--color-dark-border)] bg-[var(--color-dark)] px-4 py-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <HiShieldCheck className="text-lg text-[var(--color-primary-light)]" />
+                          <span className="font-medium text-white">{role.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEditRoleModal(role)}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-white/5 hover:text-white"
+                            title="Edit role"
+                          >
+                            <HiPencil />
+                          </button>
+                          <button
+                            onClick={() => requestDeleteRole(role)}
+                            disabled={deletingRoleId === role.id}
+                            className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                            title="Delete role"
+                          >
+                            <HiTrash />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </Card>
             </div>
 
@@ -1048,6 +1170,90 @@ export default function AdminUsersPage() {
                 }
               }}
               onConfirm={handleDelete}
+            />
+
+            <AdminModal
+              open={editRoleModalOpen}
+              onClose={closeEditRoleModal}
+              title="Edit Role"
+              className="max-w-3xl"
+            >
+              <form onSubmit={handleUpdateRole} className="space-y-5">
+                <Input
+                  label="Role Name"
+                  value={roleName}
+                  onChange={(event) => setRoleName(event.target.value)}
+                  placeholder="e.g. Project Reviewer"
+                  required
+                />
+
+                <div className="rounded-2xl border border-[var(--color-dark-border)] bg-[var(--color-dark)]/60 p-4">
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={hasFullAccess(rolePermissions)}
+                      onChange={(event) =>
+                        setRolePermissions(applyFullAccess(event.target.checked))
+                      }
+                      className="mt-1 h-4 w-4 rounded border-[var(--color-dark-border)] bg-[var(--color-dark-card)]"
+                    />
+                    <div>
+                      <p className="font-medium text-white">Full Access</p>
+                      <p className="text-sm text-[var(--color-text-muted)]">
+                        Grants access to every configurable admin section except the admin-only users screen.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-white">Permissions</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">
+                      Open any page section below and choose exactly which actions this role can do.
+                    </p>
+                  </div>
+
+                  {ADMIN_PERMISSION_GROUPS.map((group) => (
+                    <PermissionGroupEditor
+                      key={group.resource}
+                      group={group}
+                      permissions={rolePermissions}
+                      onToggle={updateRolePermission}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={closeEditRoleModal}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={savingRole}>
+                    {savingRole ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </form>
+            </AdminModal>
+
+            <DeleteConfirmModal
+              open={!!deletingRole}
+              title="Delete Role"
+              description={
+                deletingRole
+                  ? `Are you sure you want to delete the role "${deletingRole.name}"? This action cannot be undone.`
+                  : ""
+              }
+              loading={!!deletingRoleId}
+              onClose={() => {
+                if (!deletingRoleId) {
+                  setDeletingRole(null);
+                }
+              }}
+              onConfirm={handleDeleteRole}
             />
           </>
         )}
